@@ -8,8 +8,8 @@ func TestSetKey(t *testing.T) {
 		key            uint32
 		expectedValues []byte
 	}{
-		{0, 7, []byte{0, 0, 0, 7}},
-		{1, 256, []byte{0, 0, 1, 0}},
+		{0, 7, []byte{7, 0, 0, 0}},
+		{1, 256, []byte{0, 1, 0, 0}},
 	}
 
 	for i, test := range tests {
@@ -33,8 +33,8 @@ func TestGetKey(t *testing.T) {
 		cell          uint16
 		expectedValue uint32
 	}{
-		{[4]byte{0, 0, 0, 7}, 0, 7},
-		{[4]byte{0, 0, 1, 0}, 1, 256},
+		{[4]byte{7, 0, 0, 0}, 0, 7},
+		{[4]byte{0, 1, 0, 0}, 1, 256},
 	}
 
 	for i, test := range tests {

@@ -27,11 +27,11 @@ func (nt NodeType) String() string {
 
 // Generic Node header
 const (
-	NodeTypeSize        = uint(unsafe.Sizeof(LeafNode))
+	NodeTypeSize        = uint16(unsafe.Sizeof(LeafNode))
 	NodeTypeOffset      = 0
-	IsRootSize          = uint(unsafe.Sizeof(true))
+	IsRootSize          = uint16(unsafe.Sizeof(true))
 	IsRootOffset        = NodeTypeSize
-	ParentPointerSize   = uint(unsafe.Sizeof(uint32(0)))
+	ParentPointerSize   = uint16(unsafe.Sizeof(uint32(0)))
 	ParentPointerOffset = IsRootOffset + IsRootSize
 	GenericHeaderSize   = ParentPointerSize + IsRootSize + NodeTypeSize
 )
