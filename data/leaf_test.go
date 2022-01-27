@@ -75,6 +75,29 @@ func TestGetLeafValue(t *testing.T) {
 	}
 }
 
+func TestSetLeafValue(t *testing.T) {
+	tests := []struct {
+		cell         uint16
+		pageNum      uint32
+		length       uint32
+		expectedData []byte
+	}{
+		{0, 2, 3, []byte{2, 0, 0, 0, 3, 0, 0, 0}},
+		{1, 259, 6, []byte{3, 1, 0, 0, 6, 0, 0, 0}},
+	}
+
+	page := [PageSize]byte{}
+	leaf := NewNode(page)
+	for _, test := range tests {
+		leaf.SetNodeValue(test.cell, Record{test.pageNum, test.length})
+		bytes := leaf.page[12+test.cell*12 : 20+test.cell*12]
+
+		if !bytesMatch(bytes, test.expectedData) {
+			t.Errorf("incorrect data set for cell %d, expected %+v, got %+v", test.cell, test.expectedData, bytes)
+		}
+	}
+}
+
 func TestLeafFind(t *testing.T) {
 	tests := []struct {
 		key              uint32
