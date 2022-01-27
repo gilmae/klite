@@ -52,6 +52,17 @@ func (n *Node) SetNodeKey(cellNum uint16, key uint32) {
 	n.setNodeCell(cellNum, cell)
 }
 
+func (n *Node) GetNodeValue(cellNum uint16) Record {
+	cell := n.getNodeCell(cellNum)
+	return Deserialise(cell[LeafNodeKeySize:])
+}
+
+func (n *Node) SetNodeValue(cellNum uint16, r Record) {
+	cell := n.getNodeCell(cellNum)
+	copy(cell[LeafNodeKeySize:LeafNodeKeySize+LeafNodeValueSize], Serialise(r))
+	n.setNodeCell(cellNum, cell)
+}
+
 // leafNodeFind returns the position in the node the key should be in. The key may not actually be present
 func (n *Node) leafNodeFind(key uint32) (Cursor, bool) {
 	numCells := n.NumCells()

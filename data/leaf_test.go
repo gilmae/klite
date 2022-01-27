@@ -49,6 +49,32 @@ func TestGetKey(t *testing.T) {
 
 }
 
+func TestGetLeafValue(t *testing.T) {
+	tests := []struct {
+		cell           uint16
+		expectedPage   uint32
+		expectedLength uint32
+	}{
+		{0, 2, 3},
+		{1, 5, 6},
+		{2, 8, 9},
+		{3, 11, 12},
+	}
+
+	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0}
+	leaf := NewNode(page)
+	for _, test := range tests {
+		r := leaf.GetNodeValue(test.cell)
+		if r.pageNum != test.expectedPage {
+			t.Errorf("incorrect r.pageNum for cell %d, expected %d, got %d", test.cell, test.expectedPage, r.pageNum)
+		}
+
+		if r.length != test.expectedLength {
+			t.Errorf("incorrect r.length for cell %d, expected %d, got %d", test.cell, test.expectedLength, r.length)
+		}
+	}
+}
+
 func TestLeafFind(t *testing.T) {
 	tests := []struct {
 		key              uint32
