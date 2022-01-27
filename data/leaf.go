@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/binary"
-	"fmt"
 	"unsafe"
 )
 
@@ -53,7 +52,8 @@ func (n *Node) SetNodeKey(cellNum uint16, key uint32) {
 	n.setNodeCell(cellNum, cell)
 }
 
-func (n *Node) leafNodeFind(key uint32) Cursor {
+// leafNodeFind returns the position in the node the key should be in. The key may not actually be present
+func (n *Node) leafNodeFind(key uint32) (Cursor, bool) {
 	numCells := n.NumCells()
 	minIndex := uint16(0)
 	onePastMaxIndex := numCells
@@ -62,12 +62,11 @@ func (n *Node) leafNodeFind(key uint32) Cursor {
 	for onePastMaxIndex != minIndex {
 
 		idx := (minIndex + onePastMaxIndex) / 2
-		fmt.Println(onePastMaxIndex, minIndex, idx)
 		keyAtIndex := n.GetNodeKey(idx)
 
 		if key == keyAtIndex {
 			c.Index = idx
-			return c
+			return c, true
 		}
 		if key < keyAtIndex {
 			onePastMaxIndex = idx
@@ -76,5 +75,5 @@ func (n *Node) leafNodeFind(key uint32) Cursor {
 		}
 	}
 	c.Index = minIndex
-	return c
+	return c, false
 }

@@ -49,6 +49,34 @@ func TestGetKey(t *testing.T) {
 
 }
 
+func TestLeafFind(t *testing.T) {
+	tests := []struct {
+		key              uint32
+		expectedPosition uint16
+		expectedFound    bool
+	}{
+		{1, 0, true},
+		{2, 1, true},
+		{5, 3, true},
+		{3, 2, true},
+		{6, 4, false}, // key is not present but would be in index 4 if it were inserted
+		{4, 3, false}, // key is not present but would be in index 3 if it were inserted
+	}
+
+	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0}
+	leaf := NewNode(page)
+	for _, test := range tests {
+		c, found := leaf.leafNodeFind(test.key)
+		if c.Index != test.expectedPosition {
+			t.Errorf("unexpected position for key %d, expected %d, got %d", test.key, test.expectedPosition, c.Index)
+		}
+
+		if found != test.expectedFound {
+			t.Errorf("unexpected found flag for key %d, expected %t, got %t", test.key, test.expectedFound, found)
+		}
+	}
+}
+
 func bytesMatch(x, y []byte) bool {
 	if len(x) != len(y) {
 		return false
