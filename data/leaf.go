@@ -16,7 +16,7 @@ const (
 	LeafNodeKeySize   = uint16(unsafe.Sizeof(uint32(0)))
 	LeafNodeKeyOffset = 0
 
-	LeafNodeValueSize   = uint16(unsafe.Sizeof(uint32(0))) * 2
+	LeafNodeValueSize   = uint16(unsafe.Sizeof(Record{}))
 	LeafNodeValueOffset = LeafNodeKeySize + LeafNodeKeyOffset
 
 	LeafNodeCellSize      = LeafNodeKeySize + LeafNodeValueSize
