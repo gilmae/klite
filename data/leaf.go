@@ -63,6 +63,27 @@ func (n *Node) SetNodeValue(cellNum uint16, r Record) {
 	n.setNodeCell(cellNum, cell)
 }
 
+func (n *Node) leafInsert(cell uint16, key uint32, data Record) {
+	// If leaf is already full, need to call leafSplitAndInsert
+	numCells := n.NumCells()
+	if numCells >= LeafNodeMaxCells {
+		return
+	}
+
+	// Make space for new cell if it is not at the right hand end
+	if cell < numCells {
+		for i := numCells; i > cell; i-- {
+			n.setNodeCell(i, n.getNodeCell(i-1))
+		}
+	}
+
+	// Insert at the requested cell
+	n.SetNumCells(numCells + 1)
+	n.SetNodeKey(cell, key)
+	n.SetNodeValue(cell, data)
+
+}
+
 // leafNodeFind returns the position in the node the key should be in. The key may not actually be present
 func (n *Node) leafNodeFind(key uint32) (Cursor, bool) {
 	numCells := n.NumCells()

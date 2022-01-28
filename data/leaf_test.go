@@ -126,6 +126,36 @@ func TestLeafFind(t *testing.T) {
 	}
 }
 
+func TestLeafInsert(t *testing.T) {
+	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}
+	leaf := NewNode(page)
+
+	tests := []struct {
+		cell          uint16
+		key           uint32
+		value         Record
+		expectedBytes []byte
+	}{
+		{0, 1, Record{1, 2}, []byte{1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0}},
+		{1, 2, Record{3, 4}, []byte{2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0}},
+		{2, 3, Record{5, 6}, []byte{3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0}},
+		{3, 4, Record{7, 8}, []byte{4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}},
+		{4, 5, Record{9, 10}, []byte{5, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0}},
+	}
+
+	leaf.leafInsert(2, 3, Record{5, 6})
+	leaf.leafInsert(4, 5, Record{9, 20})
+
+	for _, test := range tests {
+		cellOffset := LeafNodeHeaderSize + test.cell*LeafNodeCellSize
+		leaf.leafInsert(test.cell, test.key, test.value)
+		bytes := leaf.page[cellOffset : cellOffset+LeafNodeCellSize]
+		if !bytesMatch(bytes, test.expectedBytes) {
+			t.Errorf("incorrect bytes found at cell %d, expected %+v, got %+v", test.key, test.expectedBytes, bytes)
+		}
+	}
+}
+
 func bytesMatch(x, y []byte) bool {
 	if len(x) != len(y) {
 		return false
