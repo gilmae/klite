@@ -25,21 +25,21 @@ const (
 )
 
 func (n *Node) NumCells() uint16 {
-	return binary.LittleEndian.Uint16(n.page[NumCellsOffset : NumCellsOffset+NumCellsSize])
+	return binary.LittleEndian.Uint16((*n.page)[NumCellsOffset : NumCellsOffset+NumCellsSize])
 }
 
 func (n *Node) SetNumCells(c uint16) {
-	binary.LittleEndian.PutUint16(n.page[NumCellsOffset:NumCellsOffset+NumCellsSize], c)
+	binary.LittleEndian.PutUint16((*n.page)[NumCellsOffset:NumCellsOffset+NumCellsSize], c)
 }
 
 func (n *Node) getNodeCell(cellNum uint16) []byte {
 	cellOffset := LeafNodeHeaderSize + cellNum*LeafNodeCellSize
-	return n.page[cellOffset : cellOffset+LeafNodeCellSize]
+	return (*n.page)[cellOffset : cellOffset+LeafNodeCellSize]
 }
 
 func (n *Node) setNodeCell(cellNum uint16, cell []byte) {
 	cellOffset := LeafNodeHeaderSize + cellNum*LeafNodeCellSize
-	copy(n.page[cellOffset:cellOffset+LeafNodeCellSize], cell)
+	copy((*n.page)[cellOffset:cellOffset+LeafNodeCellSize], cell)
 }
 
 func (n *Node) GetNodeKey(cellNum uint16) uint32 {
@@ -81,6 +81,9 @@ func (n *Node) leafInsert(cell uint16, key uint32, data Record) {
 	n.SetNumCells(numCells + 1)
 	n.SetNodeKey(cell, key)
 	n.SetNodeValue(cell, data)
+}
+
+func (l *Node) leafSplitAndInsert(key uint32, value Record) {
 
 }
 

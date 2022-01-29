@@ -7,8 +7,8 @@ func TestNodeType(t *testing.T) {
 		page         Page
 		expectedType NodeType
 	}{
-		{[PageSize]byte{0, 1}, LeafNode},
-		{[PageSize]byte{1, 0}, InternalNode},
+		{Page{0, 1}, LeafNode},
+		{Page{1, 0}, InternalNode},
 	}
 
 	for _, test := range tests {
@@ -24,8 +24,8 @@ func TestSetNodeType(t *testing.T) {
 		page         Page
 		expectedType NodeType
 	}{
-		{[PageSize]byte{0x1, 0x0}, LeafNode},
-		{[PageSize]byte{0x0, 0x0}, InternalNode},
+		{Page{0x1, 0x0}, LeafNode},
+		{Page{0x0, 0x0}, InternalNode},
 	}
 
 	for _, test := range tests {

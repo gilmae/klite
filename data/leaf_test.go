@@ -13,13 +13,13 @@ func TestSetKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		p := Page{}
+		p := Page(make([]byte, PageSize))
 		leaf := NewNode(&p)
 		leaf.SetType(LeafNode)
 
 		leaf.SetNodeKey(test.cell, test.key)
 		offset := 8 + test.cell*12
-		bytes := leaf.page[offset : offset+4]
+		bytes := (*leaf.page)[offset : offset+4]
 
 		if !bytesMatch(bytes, test.expectedValues) {
 			t.Errorf("unexpected key got test %d, expected %+v, got %+v", i, test.expectedValues, bytes)
@@ -38,7 +38,7 @@ func TestGetKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		p := Page{}
+		p := Page(make([]byte, PageSize))
 		offset := 8 + test.cell*12
 		copy(p[offset:offset+4], test.data[:])
 		leaf := NewNode(&p)
@@ -86,11 +86,11 @@ func TestSetLeafValue(t *testing.T) {
 		{1, 259, 6, []byte{3, 1, 0, 0, 6, 0, 0, 0}},
 	}
 
-	page := Page{}
+	page := Page(make([]byte, PageSize))
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		leaf.SetNodeValue(test.cell, Record{test.pageNum, test.length})
-		bytes := leaf.page[12+test.cell*12 : 20+test.cell*12]
+		bytes := (*leaf.page)[12+test.cell*12 : 20+test.cell*12]
 
 		if !bytesMatch(bytes, test.expectedData) {
 			t.Errorf("incorrect data set for cell %d, expected %+v, got %+v", test.cell, test.expectedData, bytes)
@@ -112,7 +112,8 @@ func TestLeafFind(t *testing.T) {
 		{4, 3, false}, // key is not present but would be in index 3 if it were inserted
 	}
 
-	page := Page{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0}
+	page := Page(make([]byte, PageSize))
+	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		c, found := leaf.leafNodeFind(test.key)
@@ -127,7 +128,8 @@ func TestLeafFind(t *testing.T) {
 }
 
 func TestLeafInsert(t *testing.T) {
-	page := Page{0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}
+	page := Page(make([]byte, PageSize))
+	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
 	leaf := NewNode(&page)
 
 	tests := []struct {
@@ -149,7 +151,7 @@ func TestLeafInsert(t *testing.T) {
 	for _, test := range tests {
 		cellOffset := LeafNodeHeaderSize + test.cell*LeafNodeCellSize
 		leaf.leafInsert(test.cell, test.key, test.value)
-		bytes := leaf.page[cellOffset : cellOffset+LeafNodeCellSize]
+		bytes := (*leaf.page)[cellOffset : cellOffset+LeafNodeCellSize]
 		if !bytesMatch(bytes, test.expectedBytes) {
 			t.Errorf("incorrect bytes found at cell %d, expected %+v, got %+v", test.key, test.expectedBytes, bytes)
 		}
