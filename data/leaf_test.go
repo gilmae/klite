@@ -13,8 +13,8 @@ func TestSetKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		p := [PageSize]byte{}
-		leaf := NewNode(p)
+		p := Page{}
+		leaf := NewNode(&p)
 		leaf.SetType(LeafNode)
 
 		leaf.SetNodeKey(test.cell, test.key)
@@ -38,10 +38,10 @@ func TestGetKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		p := [PageSize]byte{}
+		p := Page{}
 		offset := 8 + test.cell*12
 		copy(p[offset:offset+4], test.data[:])
-		leaf := NewNode(p)
+		leaf := NewNode(&p)
 		if leaf.GetNodeKey(test.cell) != test.expectedValue {
 			t.Errorf("unexpected value for test %d, expected %d, got %d", i, test.expectedValue, leaf.GetNodeKey(test.cell))
 		}
@@ -61,8 +61,8 @@ func TestGetLeafValue(t *testing.T) {
 		{3, 11, 12},
 	}
 
-	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0}
-	leaf := NewNode(page)
+	page := Page{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0}
+	leaf := NewNode(&page)
 	for _, test := range tests {
 		r := leaf.GetNodeValue(test.cell)
 		if r.pageNum != test.expectedPage {
@@ -86,8 +86,8 @@ func TestSetLeafValue(t *testing.T) {
 		{1, 259, 6, []byte{3, 1, 0, 0, 6, 0, 0, 0}},
 	}
 
-	page := [PageSize]byte{}
-	leaf := NewNode(page)
+	page := Page{}
+	leaf := NewNode(&page)
 	for _, test := range tests {
 		leaf.SetNodeValue(test.cell, Record{test.pageNum, test.length})
 		bytes := leaf.page[12+test.cell*12 : 20+test.cell*12]
@@ -112,8 +112,8 @@ func TestLeafFind(t *testing.T) {
 		{4, 3, false}, // key is not present but would be in index 3 if it were inserted
 	}
 
-	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0}
-	leaf := NewNode(page)
+	page := Page{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0}
+	leaf := NewNode(&page)
 	for _, test := range tests {
 		c, found := leaf.leafNodeFind(test.key)
 		if c.Index != test.expectedPosition {
@@ -127,8 +127,8 @@ func TestLeafFind(t *testing.T) {
 }
 
 func TestLeafInsert(t *testing.T) {
-	page := [PageSize]byte{0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}
-	leaf := NewNode(page)
+	page := Page{0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}
+	leaf := NewNode(&page)
 
 	tests := []struct {
 		cell          uint16

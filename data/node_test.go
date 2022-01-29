@@ -4,7 +4,7 @@ import "testing"
 
 func TestNodeType(t *testing.T) {
 	tests := []struct {
-		page         [PageSize]byte
+		page         Page
 		expectedType NodeType
 	}{
 		{[PageSize]byte{0, 1}, LeafNode},
@@ -12,7 +12,7 @@ func TestNodeType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		n := NewNode(test.page)
+		n := NewNode(&test.page)
 		if n.Type() != test.expectedType {
 			t.Errorf("node is wrong type ,expected %s, got %s", test.expectedType, n.Type())
 		}
@@ -21,7 +21,7 @@ func TestNodeType(t *testing.T) {
 
 func TestSetNodeType(t *testing.T) {
 	tests := []struct {
-		page         [PageSize]byte
+		page         Page
 		expectedType NodeType
 	}{
 		{[PageSize]byte{0x1, 0x0}, LeafNode},
@@ -29,7 +29,7 @@ func TestSetNodeType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		n := NewNode(test.page)
+		n := NewNode(&test.page)
 		n.SetType(test.expectedType)
 
 		if n.Type() != test.expectedType {

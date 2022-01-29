@@ -37,10 +37,10 @@ const (
 )
 
 type Node struct {
-	page Page
+	page *Page
 }
 
-func NewNode(page Page) *Node {
+func NewNode(page *Page) *Node {
 	return &Node{page: page}
 }
 
