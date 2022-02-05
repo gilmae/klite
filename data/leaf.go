@@ -11,7 +11,10 @@ const (
 	NumCellsSize   = uint16(unsafe.Sizeof(uint16(0)))
 	NumCellsOffset = GenericHeaderSize
 
-	LeafNodeHeaderSize = GenericHeaderSize + NumCellsSize
+	NextLeafPointerSize   = uint16(unsafe.Sizeof(uint32(0)))
+	NextLeafPointerOffset = GenericHeaderSize + NumCellsOffset
+
+	LeafNodeHeaderSize = GenericHeaderSize + NumCellsSize + NextLeafPointerSize
 
 	LeafNodeKeySize   = uint16(unsafe.Sizeof(uint32(0)))
 	LeafNodeKeyOffset = 0
@@ -19,10 +22,22 @@ const (
 	LeafNodeValueSize   = uint16(unsafe.Sizeof(Record{}))
 	LeafNodeValueOffset = LeafNodeKeySize + LeafNodeKeyOffset
 
-	LeafNodeCellSize      = LeafNodeKeySize + LeafNodeValueSize
-	LeafNodeSpaceForCells = PageSize - LeafNodeHeaderSize
-	LeafNodeMaxCells      = LeafNodeSpaceForCells / LeafNodeCellSize
+	LeafNodeCellSize        = LeafNodeKeySize + LeafNodeValueSize
+	LeafNodeSpaceForCells   = PageSize - LeafNodeHeaderSize
+	LeafNodeMaxCells        = LeafNodeSpaceForCells / LeafNodeCellSize
+	LeafNodeRightSplitCount = (LeafNodeMaxCells + 1) / 2
+	LeafNodeLeftSplitCount  = LeafNodeMaxCells + 1 - LeafNodeRightSplitCount
 )
+
+func NewLeaf(p *Page) *Node {
+	n := Node{p}
+	n.SetType(LeafNode)
+	n.SetIsRoot(false)
+
+	n.SetNumCells(0)
+	//n.SetNextLeaf(0)
+	return &n
+}
 
 func (n *Node) NumCells() uint16 {
 	return binary.LittleEndian.Uint16((*n.page)[NumCellsOffset : NumCellsOffset+NumCellsSize])
@@ -49,7 +64,6 @@ func (n *Node) GetNodeKey(cellNum uint16) uint32 {
 func (n *Node) SetNodeKey(cellNum uint16, key uint32) {
 	cell := n.getNodeCell(cellNum)
 	binary.LittleEndian.PutUint32(cell[LeafNodeKeyOffset:LeafNodeKeyOffset+LeafNodeKeySize], key)
-	n.setNodeCell(cellNum, cell)
 }
 
 func (n *Node) GetNodeValue(cellNum uint16) Record {
@@ -60,5 +74,4 @@ func (n *Node) GetNodeValue(cellNum uint16) Record {
 func (n *Node) SetNodeValue(cellNum uint16, r Record) {
 	cell := n.getNodeCell(cellNum)
 	copy(cell[LeafNodeKeySize:LeafNodeKeySize+LeafNodeValueSize], Serialise(r))
-	n.setNodeCell(cellNum, cell)
 }

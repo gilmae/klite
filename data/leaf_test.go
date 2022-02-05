@@ -18,7 +18,7 @@ func TestSetKey(t *testing.T) {
 		leaf.SetType(LeafNode)
 
 		leaf.SetNodeKey(test.cell, test.key)
-		offset := 8 + test.cell*12
+		offset := 12 + test.cell*12
 		bytes := (*leaf.page)[offset : offset+4]
 
 		if !bytesMatch(bytes, test.expectedValues) {
@@ -39,7 +39,7 @@ func TestGetKey(t *testing.T) {
 
 	for i, test := range tests {
 		p := Page(make([]byte, PageSize))
-		offset := 8 + test.cell*12
+		offset := 12 + test.cell*12
 		copy(p[offset:offset+4], test.data[:])
 		leaf := NewNode(&p)
 		if leaf.GetNodeKey(test.cell) != test.expectedValue {
@@ -61,7 +61,7 @@ func TestGetLeafValue(t *testing.T) {
 		{3, 11, 12},
 	}
 
-	page := Page{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0}
+	page := Page{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0}
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		r := leaf.GetNodeValue(test.cell)
@@ -90,7 +90,7 @@ func TestSetLeafValue(t *testing.T) {
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		leaf.SetNodeValue(test.cell, Record{test.pageNum, test.length})
-		bytes := (*leaf.page)[12+test.cell*12 : 20+test.cell*12]
+		bytes := (*leaf.page)[16+test.cell*12 : 24+test.cell*12]
 
 		if !bytesMatch(bytes, test.expectedData) {
 			t.Errorf("incorrect data set for cell %d, expected %+v, got %+v", test.cell, test.expectedData, bytes)
