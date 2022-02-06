@@ -71,3 +71,13 @@ func (n *Node) ParentPointer() uint32 {
 func (n *Node) SetParentPointer(parent uint32) {
 	binary.LittleEndian.PutUint32((*n.page)[ParentPointerOffset:ParentPointerOffset+ParentPointerSize], parent)
 }
+
+func (n *Node) GetMaxKey() uint32 {
+	switch n.Type() {
+	case InternalNode:
+		return n.InternalKey(n.NumKeys() - 1)
+	case LeafNode:
+		return n.GetNodeKey(n.NumCells() - 1)
+	}
+	return 0
+}

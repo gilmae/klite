@@ -17,7 +17,7 @@ func TestLeafFind(t *testing.T) {
 	}
 
 	page := Page(make([]byte, PageSize))
-	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
+	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		c, found := leafNodeFind(leaf, test.key)
@@ -51,9 +51,6 @@ func TestLeafInsert(t *testing.T) {
 
 	tree := Tree{}
 
-	// tree.leafInsert(leaf, 2, 3, Record{5, 6})
-	// tree.leafInsert(leaf, 4, 5, Record{9, 20})
-
 	for _, test := range tests {
 		cellOffset := LeafNodeHeaderSize + test.cell*LeafNodeCellSize
 		tree.leafInsert(leaf, test.cell, test.key, test.value)
@@ -61,5 +58,48 @@ func TestLeafInsert(t *testing.T) {
 		if !bytesMatch(bytes, test.expectedBytes) {
 			t.Errorf("incorrect bytes found at cell %d, expected %+v, got %+v", test.key, test.expectedBytes, bytes)
 		}
+	}
+}
+
+func TestCreateRoot(t *testing.T) {
+	tree := Tree{pager: &MemoryPager{}, rootPageNum: 0}
+
+	rootPage, _ := tree.pager.Page(tree.rootPageNum)
+	root := Node{page: rootPage}
+
+	root.SetType(LeafNode)
+	root.SetNumKeys(1)
+	root.SetNodeKey(0, 10)
+	root.SetNodeValue(0, Record{2, 3})
+
+	rightPageNum := tree.pager.GetNextUnusedPageNum()
+	rightPage, _ := tree.pager.Page(rightPageNum)
+	rightNode := Node{page: rightPage}
+
+	rightNode.SetType(LeafNode)
+	rightNode.SetNumKeys(1)
+	rightNode.SetNodeKey(0, 40)
+	rightNode.SetNodeValue(0, Record{5, 6})
+
+	tree.CreateNewRoot(rightPageNum)
+
+	if root.Type() != InternalNode {
+		t.Errorf("unexpected node type for root, expected %s, got %s", InternalNode, root.Type())
+	}
+
+	if root.NumKeys() != 1 {
+		t.Errorf("unexpected value for root.NumKeys, expected %d, got %d", 1, root.NumKeys())
+	}
+
+	if root.RightChild() != rightPageNum {
+		t.Errorf("unexpected value for root.RightChild, expected %d, got %d", rightPageNum, root.RightChild())
+	}
+
+	if root.ChildPointer(0) != rightPageNum+1 {
+		t.Errorf("unexpected value for root.ChildPointer in cell 0, expected %d, got %d", rightPageNum+1, root.InternalKey(0))
+	}
+
+	if root.InternalKey(0) != 10 {
+		t.Errorf("unexpected value for root.InternalKey in cell 0, expected %d, got %d", 10, root.InternalKey(0))
 	}
 }
