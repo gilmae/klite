@@ -19,8 +19,9 @@ func TestLeafFind(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
 	leaf := NewNode(&page)
+	tree := Tree{}
 	for _, test := range tests {
-		c, found := leafNodeFind(leaf, test.key)
+		c, found := tree.leafNodeFind(leaf, test.key)
 		if c.Index != test.expectedPosition {
 			t.Errorf("unexpected position for key %d, expected %d, got %d", test.key, test.expectedPosition, c.Index)
 		}
@@ -35,7 +36,6 @@ func TestLeafInsert(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
 	leaf := NewNode(&page)
-
 	tests := []struct {
 		cell          uint16
 		key           uint32
@@ -53,7 +53,8 @@ func TestLeafInsert(t *testing.T) {
 
 	for _, test := range tests {
 		cellOffset := LeafNodeHeaderSize + test.cell*LeafNodeCellSize
-		tree.leafInsert(leaf, test.cell, test.key, test.value)
+		c, _ := tree.leafNodeFind(leaf, test.key)
+		tree.leafInsert(c, test.cell, test.key, test.value)
 		bytes := (*leaf.page)[cellOffset : cellOffset+LeafNodeCellSize]
 		if !bytesMatch(bytes, test.expectedBytes) {
 			t.Errorf("incorrect bytes found at cell %d, expected %+v, got %+v", test.key, test.expectedBytes, bytes)
