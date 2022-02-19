@@ -78,25 +78,26 @@ func (t *Tree) leafNodeFind(n *Node, key uint32) (Cursor, bool) {
 	return c, false
 }
 
-func (t *Tree) leafInsert(c Cursor, cell uint16, key uint32, data Record) {
+func (t *Tree) leafInsert(c Cursor, key uint32, data Record) {
 	n := c.Node
 	// If leaf is already full, need to call leafSplitAndInsert
 	numCells := n.NumCells()
 	if numCells >= LeafNodeMaxCells {
 		t.leafSplitAndInsert(c, key, data)
+		return
 	}
 
 	// Make space for new cell if it is not at the right hand end
-	if cell < numCells {
-		for i := numCells; i > cell; i-- {
+	if c.Index < numCells {
+		for i := numCells; i > c.Index; i-- {
 			n.setNodeCell(i, n.getNodeCell(i-1))
 		}
 	}
 
 	// Insert at the requested cell
 	n.SetNumCells(numCells + 1)
-	n.SetNodeKey(cell, key)
-	n.SetNodeValue(cell, data)
+	n.SetNodeKey(c.Index, key)
+	n.SetNodeValue(c.Index, data)
 }
 
 func (t *Tree) leafSplitAndInsert(c Cursor, key uint32, value Record) {
@@ -116,8 +117,8 @@ func (t *Tree) leafSplitAndInsert(c Cursor, key uint32, value Record) {
 
 		newIndex := index % LeafNodeLeftSplitCount
 		if index == c.Index {
-			destinationLeaf.SetNodeKey(c.Index, key)
-			destinationLeaf.SetNodeValue(c.Index, value)
+			destinationLeaf.SetNodeKey(newIndex, key)
+			destinationLeaf.SetNodeValue(newIndex, value)
 		} else {
 			if index > c.Index {
 				destinationLeaf.setNodeCell(newIndex, c.Node.getNodeCell(index-1))
