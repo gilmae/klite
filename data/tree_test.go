@@ -2,6 +2,119 @@ package data
 
 import "testing"
 
+func TestNewINternal(t *testing.T) {
+	page := Page(make([]byte, PageSize))
+
+	node := NewInternal(&page)
+
+	if node.NumKeys() != 0 {
+		t.Errorf("unexpected num keys, expected %d, got %d", 0, node.NumKeys())
+	}
+
+	if node.Type() != InternalNode {
+		t.Errorf("unexpected node type. expected %s, got %s", InternalNode, node.Type())
+	}
+
+	if node.IsRoot() {
+		t.Errorf("unexpected IsRoot, expected %+v, got %+v", false, node.IsRoot())
+	}
+}
+
+func TestInternalInsertAtEnd(t *testing.T) {
+	page := Page(make([]byte, PageSize))
+
+	node := NewInternal(&page)
+	// Num Keys = 1, Right Child = 2, cell0: key=9, child=1
+	copy(page[6:20], []byte{0x1, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0})
+
+	tree := Tree{}
+	tree.rootPageNum = 0
+
+	tree.internalInsert(node, 16, 3)
+
+	if node.InternalKey(1) != 16 {
+		t.Errorf("unexpected value for first key, expected %d, got %d", 16, node.InternalKey(1))
+	}
+
+	if node.RightChild() != 3 {
+		t.Errorf("unexpected value for right child, expected %d, got %d", 3, node.RightChild())
+	}
+
+	if node.ChildPointer(1) != 2 {
+		t.Errorf("unexpected value for child pointer[1], expected %d, got %d", 2, node.ChildPointer(1))
+	}
+
+}
+
+func TestInternalInsertAtBeginning(t *testing.T) {
+	page := Page(make([]byte, PageSize))
+
+	node := NewInternal(&page)
+	// Num Keys = 1, Right Child = 2, cell0: key=16, child=1
+	copy(page[6:20], []byte{0x1, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0})
+
+	tree := Tree{}
+	tree.rootPageNum = 0
+
+	tree.internalInsert(node, 9, 3)
+
+	if node.InternalKey(0) != 9 {
+		t.Errorf("unexpected value for first key, expected %d, got %d", 9, node.InternalKey(0))
+	}
+
+	if node.ChildPointer(0) != 3 {
+		t.Errorf("unexpected value for child pointer[1], expected %d, got %d", 3, node.ChildPointer(0))
+	}
+}
+
+func TestInternalInsertInMiddle(t *testing.T) {
+	page := Page(make([]byte, PageSize))
+
+	node := NewInternal(&page)
+	// Num Keys = 2, Right Child = 3, cell0: key=9, child=1, cell1: key=16, child=2
+	copy(page[6:28], []byte{0x2, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0})
+
+	tree := Tree{}
+	tree.rootPageNum = 0
+
+	// if node.InternalKey(0) != 9 {
+	// 	t.Errorf("unexpected initial value for first key, expected %d, got %d", 9, node.InternalKey(0))
+	// }
+
+	// if node.InternalKey(1) != 16 {
+	// 	t.Errorf("unexpected initial value for second key, expected %d, got %d", 16, node.InternalKey(1))
+	// }
+
+	// if node.ChildPointer(0) != 1 {
+	// 	t.Errorf("unexpected initial value for child pointer[0], expected %d, got %d", 1, node.ChildPointer(4))
+	// }
+	// if node.ChildPointer(1) != 2 {
+	// 	t.Errorf("unexpected initial value for child pointer[1], expected %d, got %d", 2, node.ChildPointer(4))
+	// }
+	tree.internalInsert(node, 13, 4)
+
+	if node.InternalKey(0) != 9 {
+		t.Errorf("unexpected value for first key, expected %d, got %d", 9, node.InternalKey(0))
+	}
+
+	if node.InternalKey(1) != 13 {
+		t.Errorf("unexpected value for second key, expected %d, got %d", 13, node.InternalKey(1))
+	}
+
+	if node.InternalKey(2) != 16 {
+		t.Errorf("unexpected value for third key, expected %d, got %d", 16, node.InternalKey(2))
+	}
+
+	if node.ChildPointer(0) != 1 {
+		t.Errorf("unexpected value for child pointer[0], expected %d, got %d", 1, node.ChildPointer(4))
+	}
+	if node.ChildPointer(1) != 4 {
+		t.Errorf("unexpected value for child pointer[1], expected %d, got %d", 1, node.ChildPointer(4))
+	}
+	if node.ChildPointer(2) != 2 {
+		t.Errorf("unexpected value for child pointer[2], expected %d, got %d", 1, node.ChildPointer(4))
+	}
+}
 func TestLeafFind(t *testing.T) {
 	tests := []struct {
 		key              uint32

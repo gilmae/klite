@@ -52,6 +52,52 @@ func (t *Tree) internalNodeFind(n *Node, key uint32) (Cursor, bool) {
 	return Cursor{}, false
 }
 
+func (t *Tree) internalInsert(n *Node, key uint32, rightChildPageNum uint32) {
+	// If node is already full, need to call internalSplitAndInsert
+	numCells := n.NumCells()
+	if numCells >= InternalNodeMaxCells {
+		t.internalSplitAndInsert(n, rightChildPageNum)
+		return
+	}
+
+	// Find where it should go
+	lastKey := n.InternalKey(numCells - 1)
+	if key > lastKey {
+		n.SetInternalKey(numCells, key)
+		n.SetChildPointer(numCells, n.RightChild())
+		n.SetRightChild(rightChildPageNum)
+	} else {
+		// Find position of first key larger than it.
+		// Shuffle all keys and child pointers from that position one to the right
+		// Add new key and child pointer
+		numKeys := n.NumKeys()
+		minIndex, maxIndex := uint16(0), numKeys
+		for minIndex != maxIndex {
+			index := (minIndex + maxIndex) / 2
+
+			keyToRight := n.InternalKey(index)
+			if keyToRight >= key {
+				maxIndex = index
+			} else {
+				minIndex += 1
+			}
+		}
+
+		// If not at the end, move cells over to make room
+		for idx := numCells; idx > minIndex; idx-- {
+			n.moveInternalCell(idx-1, idx)
+		}
+
+		n.SetInternalKey(minIndex, key)
+		n.SetChildPointer(minIndex, rightChildPageNum)
+
+	}
+}
+
+func (t *Tree) internalSplitAndInsert(n *Node, rightChildPageNum uint32) {
+
+}
+
 // leafNodeFind returns the position in the node the key should be in. The key may not actually be present
 func (t *Tree) leafNodeFind(n *Node, key uint32) (Cursor, bool) {
 	numCells := n.NumCells()
