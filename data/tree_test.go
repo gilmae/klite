@@ -77,20 +77,6 @@ func TestInternalInsertInMiddle(t *testing.T) {
 	tree := Tree{}
 	tree.rootPageNum = 0
 
-	// if node.InternalKey(0) != 9 {
-	// 	t.Errorf("unexpected initial value for first key, expected %d, got %d", 9, node.InternalKey(0))
-	// }
-
-	// if node.InternalKey(1) != 16 {
-	// 	t.Errorf("unexpected initial value for second key, expected %d, got %d", 16, node.InternalKey(1))
-	// }
-
-	// if node.ChildPointer(0) != 1 {
-	// 	t.Errorf("unexpected initial value for child pointer[0], expected %d, got %d", 1, node.ChildPointer(4))
-	// }
-	// if node.ChildPointer(1) != 2 {
-	// 	t.Errorf("unexpected initial value for child pointer[1], expected %d, got %d", 2, node.ChildPointer(4))
-	// }
 	tree.internalInsert(node, 13, 4)
 
 	if node.InternalKey(0) != 9 {
@@ -177,8 +163,10 @@ func TestLeafInsert(t *testing.T) {
 
 func TestLeafSplit(t *testing.T) {
 	tree := Tree{pager: &MemoryPager{}}
-	leafPage, _ := tree.pager.Page(0)
-	tree.rootPageNum = 0
+	tree.pager.Page(0) // unused page to ensure parent pointers are not 0
+
+	leafPage, _ := tree.pager.Page(1)
+	tree.rootPageNum = 1
 	leaf := NewLeaf(leafPage)
 	leaf.SetIsRoot(true)
 	for i := uint32(0); i < 341; i++ {
@@ -186,15 +174,15 @@ func TestLeafSplit(t *testing.T) {
 		tree.leafInsert(c, i, Record{i, i})
 	}
 
-	if tree.pager.GetNextUnusedPageNum() != 3 {
-		t.Errorf("Unexpected next unused page, expected %d, got %d", 3, tree.pager.GetNextUnusedPageNum())
+	if tree.pager.GetNextUnusedPageNum() != 4 {
+		t.Errorf("Unexpected next unused page, expected %d, got %d", 4, tree.pager.GetNextUnusedPageNum())
 	}
 
-	if tree.rootPageNum != 0 {
-		t.Errorf("unexpected root page num, expected %d, got %d", 0, tree.rootPageNum)
+	if tree.rootPageNum != 1 {
+		t.Errorf("unexpected root page num, expected %d, got %d", 1, tree.rootPageNum)
 	}
 
-	rootPage, _ := tree.pager.Page(0)
+	rootPage, _ := tree.pager.Page(1)
 	root := Node{page: rootPage}
 
 	if root.Type() != InternalNode {
@@ -214,8 +202,8 @@ func TestLeafSplit(t *testing.T) {
 	leftPage, _ := tree.pager.Page(leftNodePageNum)
 	leftNode := Node{page: leftPage}
 
-	if leftNodePageNum != 2 {
-		t.Errorf("unexpected left child page num, expected %d, got %d", 2, leftNodePageNum)
+	if leftNodePageNum != 3 {
+		t.Errorf("unexpected left child page num, expected %d, got %d", 3, leftNodePageNum)
 	}
 
 	if leftNode.NumCells() != 171 {
@@ -229,9 +217,13 @@ func TestLeafSplit(t *testing.T) {
 		t.Errorf("unexpected value for leftNode.cell[170], expected %d, got %d", 170, leftNode.GetNodeKey(171))
 	}
 
+	if leftNode.ParentPointer() != 1 {
+		t.Errorf("unexpected value for left node's parent, expected %d, got %d", 1, leftNode.ParentPointer())
+	}
+
 	rightNodePageNum := root.RightChild()
-	if rightNodePageNum != 1 {
-		t.Errorf("unexpected right child page num, expected %d, got %d", 1, rightNodePageNum)
+	if rightNodePageNum != 2 {
+		t.Errorf("unexpected right child page num, expected %d, got %d", 2, rightNodePageNum)
 	}
 	rightPage, _ := tree.pager.Page(rightNodePageNum)
 	rightNode := Node{page: rightPage}
@@ -248,6 +240,10 @@ func TestLeafSplit(t *testing.T) {
 	if rightNode.GetNodeKey(0) != 171 {
 		t.Errorf("unexpected value for rightNOde.cell[0], expected %d, got %d", 171, rightNode.GetNodeKey(0))
 	}
+	if rightNode.ParentPointer() != 1 {
+		t.Errorf("unexpected value for right node's parent, expected %d, got %d", 1, rightNode.ParentPointer())
+	}
+
 }
 
 func TestCreateRoot(t *testing.T) {

@@ -90,7 +90,6 @@ func (t *Tree) internalInsert(n *Node, key uint32, rightChildPageNum uint32) {
 
 		n.SetInternalKey(minIndex, key)
 		n.SetChildPointer(minIndex, rightChildPageNum)
-
 	}
 }
 
@@ -184,7 +183,10 @@ func (t *Tree) leafSplitAndInsert(c Cursor, key uint32, value Record) {
 		t.CreateNewRoot(nextPageNum)
 	} else {
 		// Update parent
-		panic("Don't know how to update parents yet")
+		parentPage, _ := t.pager.Page(c.Node.ParentPointer())
+		parent := Node{page: parentPage}
+		t.internalInsert(&parent, c.Node.GetMaxKey(), nextPageNum)
+		newLeaf.SetParentPointer(c.Node.ParentPointer())
 	}
 }
 
@@ -200,6 +202,7 @@ func (t *Tree) CreateNewRoot(rightChildPageNum uint32) {
 	copy(*leftChildPage, *currentRootPage)
 	leftChild := Node{page: leftChildPage}
 	leftChild.SetIsRoot(false)
+	leftChild.SetParentPointer(t.rootPageNum)
 
 	root := NewInternal(currentRootPage)
 	root.SetIsRoot(true)
@@ -207,4 +210,8 @@ func (t *Tree) CreateNewRoot(rightChildPageNum uint32) {
 	root.SetChildPointer(0, leftChildPageNum)
 	root.SetInternalKey(0, leftChild.GetMaxKey())
 	root.SetRightChild(rightChildPageNum)
+
+	rightChildPage, _ := t.pager.Page(rightChildPageNum)
+	rightChild := Node{page: rightChildPage}
+	rightChild.SetParentPointer(t.rootPageNum)
 }
