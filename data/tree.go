@@ -56,7 +56,7 @@ func (t *Tree) internalInsert(n *Node, key uint32, rightChildPageNum uint32) {
 	// If node is already full, need to call internalSplitAndInsert
 	numCells := n.NumCells()
 	if numCells >= InternalNodeMaxCells {
-		t.internalSplitAndInsert(n, rightChildPageNum)
+		t.internalSplitAndInsert(n, key, rightChildPageNum)
 		return
 	}
 
@@ -93,8 +93,64 @@ func (t *Tree) internalInsert(n *Node, key uint32, rightChildPageNum uint32) {
 	}
 }
 
-func (t *Tree) internalSplitAndInsert(n *Node, rightChildPageNum uint32) {
+func (t *Tree) internalSplitAndInsert(n *Node, key uint32, rightChildPageNum uint32) {
+	nextPageNum := t.pager.GetNextUnusedPageNum()
+	newPage, _ := t.pager.Page(nextPageNum) // TODO handle error
+	newInternal := NewInternal(newPage)
 
+	// Find where the key should go
+	numKeys := n.NumKeys()
+	minIndex, maxIndex := uint16(0), numKeys
+	for minIndex != maxIndex {
+		index := (minIndex + maxIndex) / 2
+
+		keyToRight := n.InternalKey(index)
+		if keyToRight >= key {
+			maxIndex = index
+		} else {
+			minIndex += 1
+		}
+	}
+
+	for i := int16(InternalNodeMaxCells); i >= 0; i-- {
+		index := uint16(i)
+		var destination *Node
+
+		if index >= InternalNodeLeftSplitCount {
+			destination = newInternal
+
+		} else {
+			destination = n
+
+		}
+
+		newIndex := index % InternalNodeLeftSplitCount
+		if index == minIndex {
+			destination.SetInternalKey(newIndex, key)
+			destination.SetChildPointer(newIndex, rightChildPageNum)
+		} else {
+			if index > minIndex {
+				destination.setInternalCell(newIndex, n.internalCell(index-1))
+			} else {
+				destination.setInternalCell(newIndex, n.internalCell(index))
+			}
+		}
+
+	}
+
+	n.SetNumKeys(InternalNodeLeftSplitCount - 1)
+	newInternal.SetNumKeys(numKeys + 1 - (InternalNodeLeftSplitCount - 1))
+
+	// Update Parent
+	if n.IsRoot() {
+		t.CreateNewRoot(nextPageNum)
+	} else {
+		// Update parent
+		parentPage, _ := t.pager.Page(n.ParentPointer())
+		parent := Node{page: parentPage}
+		t.internalInsert(&parent, n.GetMaxKey(), nextPageNum)
+		newInternal.SetParentPointer(n.ParentPointer())
+	}
 }
 
 // leafNodeFind returns the position in the node the key should be in. The key may not actually be present
@@ -209,7 +265,7 @@ func (t *Tree) CreateNewRoot(rightChildPageNum uint32) {
 	root.SetNumKeys(1)
 	root.SetChildPointer(0, leftChildPageNum)
 	root.SetInternalKey(0, leftChild.GetMaxKey())
-	root.SetRightChild(rightChildPageNum)
+	root.SetChildPointer(1, rightChildPageNum)
 
 	rightChildPage, _ := t.pager.Page(rightChildPageNum)
 	rightChild := Node{page: rightChildPage}

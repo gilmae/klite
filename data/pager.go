@@ -2,7 +2,7 @@ package data
 
 import "fmt"
 
-const PageSize = 4096
+const PageSize = 72
 const MAXPAGES = uint32(100)
 
 type Page []byte

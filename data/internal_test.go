@@ -64,12 +64,13 @@ func TestChildPointer(t *testing.T) {
 		expectedResult uint32
 	}{
 		{0, []byte{0x0, 0x1, 0x0, 0x0}, 256},
-		{10, []byte{0x1, 0x1, 0x1, 0x1}, 16843009},
+		{1, []byte{0x1, 0x1, 0x1, 0x1}, 16843009},
 	}
 
 	for _, test := range tests {
 		p := Page(make([]byte, PageSize))
 		node := NewInternal(&p)
+		//copy(p[NumCellsOffset:NumCellsOffset+1], []byte{byte(test.cell + 1)})
 		offset := 12 + 8*int(test.cell)
 		copy(p[offset:offset+4], test.data)
 		actualResult := node.ChildPointer(test.cell)
@@ -88,12 +89,14 @@ func TestSetChildPointer(t *testing.T) {
 		expectedResult []byte
 	}{
 		{0, 256, []byte{0x0, 0x1, 0x0, 0x0}},
-		{10, 16843008, []byte{0x0, 0x1, 0x1, 0x1}},
+		{1, 16843008, []byte{0x0, 0x1, 0x1, 0x1}},
 	}
 
 	for _, test := range tests {
 		p := Page(make([]byte, PageSize))
 		node := NewInternal(&p)
+		//copy(p[NumCellsOffset:NumCellsOffset+1], []byte{byte(test.cell + 1)})
+
 		node.SetChildPointer(test.cell, test.data)
 		offset := 12 + 8*int(test.cell)
 		actualResult := p[offset : offset+4]
@@ -112,7 +115,7 @@ func TestInternalKey(t *testing.T) {
 		expectedResult uint32
 	}{
 		{0, []byte{0x0, 0x1, 0x0, 0x0}, 256},
-		{10, []byte{0x1, 0x1, 0x1, 0x1}, 16843009},
+		{1, []byte{0x1, 0x1, 0x1, 0x1}, 16843009},
 	}
 
 	for _, test := range tests {
@@ -136,7 +139,7 @@ func TestSetTestInternalKey(t *testing.T) {
 		expectedResult []byte
 	}{
 		{0, 257, []byte{0x1, 0x1, 0x0, 0x0}},
-		{10, 16843010, []byte{0x2, 0x1, 0x1, 0x1}},
+		{1, 16843010, []byte{0x2, 0x1, 0x1, 0x1}},
 	}
 
 	for _, test := range tests {

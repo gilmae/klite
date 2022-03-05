@@ -2,7 +2,21 @@ package data
 
 import "testing"
 
-func TestNewINternal(t *testing.T) {
+func TestNewRoot(t *testing.T) {
+	page := Page(make([]byte, PageSize))
+	node := NewInternal(&page)
+	node.SetChildPointer(0, 0)
+	node.SetChildPointer(1, 1)
+	node.SetInternalKey(0, 1)
+	node.SetNumKeys(1)
+	node.SetType(InternalNode)
+
+	if node.ChildPointer(1) != 1 {
+		t.Errorf("unexpected value for node.ChildPointer(1), expected %d, got %d", 1, node.ChildPointer(1))
+	}
+}
+
+func TestNewInternal(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 
 	node := NewInternal(&page)
@@ -101,6 +115,73 @@ func TestInternalInsertInMiddle(t *testing.T) {
 		t.Errorf("unexpected value for child pointer[2], expected %d, got %d", 1, node.ChildPointer(4))
 	}
 }
+
+func TestSplitInternal(t *testing.T) {
+	p := MemoryPager{}
+	tree := Tree{pager: &p, rootPageNum: 0}
+
+	rootPage, _ := p.Page(0)
+	root := NewInternal(rootPage)
+	root.SetIsRoot(true)
+
+	for i := uint16(1); i <= InternalNodeMaxCells; i++ {
+		p.Page(uint32(i))
+		root.SetInternalKey(i-1, uint32(i))
+		root.SetChildPointer(i-1, uint32(i))
+	}
+
+	if root.RightChild() != uint32(0) {
+		t.Errorf("unexpected value for root.RightCHild, expected %d, got %d", uint32(0), root.RightChild())
+	}
+	root.SetNumKeys(InternalNodeMaxCells)
+	p.Page(uint32(InternalNodeMaxCells + 1))
+	root.SetChildPointer(InternalNodeMaxCells, uint32(InternalNodeMaxCells+1))
+
+	expectedRightPageNum := p.GetNextUnusedPageNum()
+	expectedLeftPageNum := expectedRightPageNum + 1
+
+	// Everything in indexes greater than or equal to InternalNodeLeftSplitCount should be in right node.
+	// So the expected ket will be the max key in Left Node, which should be the key in
+	// InternalNodeLeftSplitCount-1
+	//expectedMaxLeftKey := root.InternalKey(InternalNodeLeftSplitCount - 1)
+
+	if root.RightChild() != uint32(InternalNodeMaxCells+1) {
+		t.Errorf("unexpected value for root.RightCHild, expected %d, got %d", uint32(InternalNodeMaxCells+1), root.RightChild())
+	}
+
+	tree.internalSplitAndInsert(root, uint32(InternalNodeMaxCells+1), uint32(InternalNodeMaxCells+2))
+
+	if tree.rootPageNum != 0 {
+		t.Errorf("unexpected value for tree.rootPageNum, expected %d, got %d", 0, tree.rootPageNum)
+	}
+
+	if root.ChildPointer(0) != expectedLeftPageNum {
+		t.Errorf("unexpected value for root.ChildPointer(0), expected %d, got %d", expectedLeftPageNum, root.ChildPointer(0))
+	}
+	if root.ChildPointer(1) != expectedRightPageNum {
+		t.Errorf("unexpected value for root.RightChild(), expected %d, got %d", expectedRightPageNum, root.ChildPointer(1))
+	}
+
+	leftPage, _ := tree.pager.Page(expectedLeftPageNum)
+	leftNode := Node{page: leftPage}
+
+	for i := uint16(0); i <= 3; i++ {
+		if leftNode.InternalKey(i) != uint32(i+1) {
+			t.Errorf("unexpected value for leftNode.InternalKey(), expected %d, got %d", i+1, leftNode.InternalKey(i))
+		}
+	}
+	rightPage, _ := tree.pager.Page(expectedRightPageNum)
+	rightNode := Node{page: rightPage}
+
+	for i := uint16(4); i < 7; i++ {
+		actualIndex := i % InternalNodeLeftSplitCount
+		if rightNode.InternalKey(actualIndex) != uint32(i+1) {
+			t.Errorf("unexpected value for rightNode.InternalKey(), expected %d, got %d", i+1, rightNode.InternalKey(actualIndex))
+		}
+	}
+
+}
+
 func TestLeafFind(t *testing.T) {
 	tests := []struct {
 		key              uint32
@@ -145,7 +226,7 @@ func TestLeafInsert(t *testing.T) {
 		{1, 2, Record{3, 4}, []byte{2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0}},
 		{2, 3, Record{5, 6}, []byte{3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0}},
 		{3, 4, Record{7, 8}, []byte{4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}},
-		{4, 5, Record{9, 10}, []byte{5, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0}},
+		//{4, 5, Record{9, 10}, []byte{5, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0}},
 	}
 
 	tree := Tree{}
@@ -169,7 +250,7 @@ func TestLeafSplit(t *testing.T) {
 	tree.rootPageNum = 1
 	leaf := NewLeaf(leafPage)
 	leaf.SetIsRoot(true)
-	for i := uint32(0); i < 341; i++ {
+	for i := uint32(0); i < uint32(LeafNodeMaxCells)+1; i++ {
 		c, _ := tree.leafNodeFind(leaf, i)
 		tree.leafInsert(c, i, Record{i, i})
 	}
@@ -193,9 +274,9 @@ func TestLeafSplit(t *testing.T) {
 		t.Errorf("unexpected number of keys in root node, expected %d, got %d", 1, root.NumKeys())
 	}
 
-	// Because we counted up from 0 and the LeafNodeLEftSplitCount = 171, the max key in left node should be 170
-	if root.InternalKey(0) != 170 {
-		t.Errorf("unexpected value for key 0 in root node, expected %d, got %d", 170, root.InternalKey(0))
+	// Because we counted up from 0 and the LeafNodeLeftSplitCount = 171, the max key in left node should be 170
+	if root.InternalKey(0) != uint32(LeafNodeLeftSplitCount)-1 {
+		t.Errorf("unexpected value for key 0 in root node, expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, root.InternalKey(0))
 	}
 
 	leftNodePageNum := root.ChildPointer(0)
@@ -206,39 +287,39 @@ func TestLeafSplit(t *testing.T) {
 		t.Errorf("unexpected left child page num, expected %d, got %d", 3, leftNodePageNum)
 	}
 
-	if leftNode.NumCells() != 171 {
-		t.Errorf("unexpected number of cells in left child, expected %d, got %d", 171, leftNode.NumCells())
+	if leftNode.NumCells() != LeafNodeLeftSplitCount {
+		t.Errorf("unexpected number of cells in left child, expected %d, got %d", LeafNodeLeftSplitCount, leftNode.NumCells())
 	}
 
-	if leftNode.GetMaxKey() != 170 {
-		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", 170, leftNode.GetMaxKey())
+	if leftNode.GetMaxKey() != uint32(LeafNodeLeftSplitCount)-1 {
+		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, leftNode.GetMaxKey())
 	}
-	if leftNode.GetNodeKey(170) != 170 {
-		t.Errorf("unexpected value for leftNode.cell[170], expected %d, got %d", 170, leftNode.GetNodeKey(171))
+	if leftNode.GetNodeKey(LeafNodeLeftSplitCount-1) != uint32(LeafNodeLeftSplitCount)-1 {
+		t.Errorf("unexpected value for leftNode.cell[170], expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, leftNode.GetNodeKey(LeafNodeLeftSplitCount))
 	}
 
 	if leftNode.ParentPointer() != 1 {
 		t.Errorf("unexpected value for left node's parent, expected %d, got %d", 1, leftNode.ParentPointer())
 	}
 
-	rightNodePageNum := root.RightChild()
+	rightNodePageNum := root.ChildPointer(1)
 	if rightNodePageNum != 2 {
 		t.Errorf("unexpected right child page num, expected %d, got %d", 2, rightNodePageNum)
 	}
 	rightPage, _ := tree.pager.Page(rightNodePageNum)
 	rightNode := Node{page: rightPage}
 
-	if rightNode.NumCells() != 170 {
-		t.Errorf("unexpected number of cells in right child, expected %d, got %d", 170, rightNode.NumCells())
+	if rightNode.NumCells() != LeafNodeRightSplitCount {
+		t.Errorf("unexpected number of cells in right child, expected %d, got %d", LeafNodeRightSplitCount, rightNode.NumCells())
 	}
-	if rightNode.GetMaxKey() != 340 {
-		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", 170, rightNode.GetMaxKey())
+	if rightNode.GetMaxKey() != uint32(LeafNodeMaxCells) {
+		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeMaxCells), rightNode.GetMaxKey())
 	}
-	if rightNode.GetNodeKey(169) != 340 {
-		t.Errorf("unexpected value for rightNode.cell[169], expected %d, got %d", 340, rightNode.GetNodeKey(169))
+	if rightNode.GetNodeKey(LeafNodeRightSplitCount-1) != uint32(LeafNodeMaxCells) {
+		t.Errorf("unexpected value for last rightNode.cell key, expected %d, got %d", LeafNodeMaxCells, rightNode.GetNodeKey(LeafNodeRightSplitCount-1))
 	}
-	if rightNode.GetNodeKey(0) != 171 {
-		t.Errorf("unexpected value for rightNOde.cell[0], expected %d, got %d", 171, rightNode.GetNodeKey(0))
+	if rightNode.GetNodeKey(0) != uint32(LeafNodeLeftSplitCount) {
+		t.Errorf("unexpected value for rightNode.cell[0], expected %d, got %d", uint32(LeafNodeRightSplitCount), rightNode.GetNodeKey(0))
 	}
 	if rightNode.ParentPointer() != 1 {
 		t.Errorf("unexpected value for right node's parent, expected %d, got %d", 1, rightNode.ParentPointer())
@@ -276,7 +357,7 @@ func TestCreateRoot(t *testing.T) {
 		t.Errorf("unexpected value for root.NumKeys, expected %d, got %d", 1, root.NumKeys())
 	}
 
-	if root.RightChild() != rightPageNum {
+	if root.ChildPointer(1) != rightPageNum {
 		t.Errorf("unexpected value for root.RightChild, expected %d, got %d", rightPageNum, root.RightChild())
 	}
 
