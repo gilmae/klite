@@ -6,13 +6,14 @@ func TestNewRoot(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 	node := NewInternal(&page)
 	node.SetChildPointer(0, 0)
+	node.SetNumKeys(1)
 	node.SetChildPointer(1, 1)
 	node.SetInternalKey(0, 1)
-	node.SetNumKeys(1)
+
 	node.SetType(InternalNode)
 
-	if node.ChildPointer(1) != 1 {
-		t.Errorf("unexpected value for node.ChildPointer(1), expected %d, got %d", 1, node.ChildPointer(1))
+	if node.RightChild() != 1 {
+		t.Errorf("unexpected value for node.RightChild(), expected %d, got %d", 1, node.RightChild())
 	}
 }
 
@@ -38,24 +39,22 @@ func TestInternalInsertAtEnd(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 
 	node := NewInternal(&page)
-	// Num Keys = 1, Right Child = 2, cell0: key=9, child=1
-	copy(page[6:20], []byte{0x1, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0})
 
 	tree := Tree{}
 	tree.rootPageNum = 0
+	node.SetInternalKey(0, 0)
+	node.SetChildPointer(0, 0)
+	node.SetNumKeys(1)
 
-	tree.internalInsert(node, 16, 3)
-
-	if node.InternalKey(1) != 16 {
-		t.Errorf("unexpected value for first key, expected %d, got %d", 16, node.InternalKey(1))
+	for i := uint32(1); i < uint32(InternalNodeMaxCells); i++ {
+		node.SetInternalKey(uint16(i), i)
+		node.SetChildPointer(uint16(i), i)
+		node.SetNumKeys(uint16(i + 1))
 	}
 
-	if node.RightChild() != 3 {
-		t.Errorf("unexpected value for right child, expected %d, got %d", 3, node.RightChild())
-	}
-
-	if node.ChildPointer(1) != 2 {
-		t.Errorf("unexpected value for child pointer[1], expected %d, got %d", 2, node.ChildPointer(1))
+	node.SetChildPointer(InternalNodeMaxCells, uint32(InternalNodeMaxCells))
+	if node.RightChild() != uint32(InternalNodeMaxCells) {
+		t.Errorf("unexpected value for right child, expected %d, got %d", uint32(InternalNodeMaxCells), node.RightChild())
 	}
 
 }
@@ -86,7 +85,7 @@ func TestInternalInsertInMiddle(t *testing.T) {
 
 	node := NewInternal(&page)
 	// Num Keys = 2, Right Child = 3, cell0: key=9, child=1, cell1: key=16, child=2
-	copy(page[6:28], []byte{0x2, 0x0, 0x2, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0})
+	copy(page[6:28], []byte{0x2, 0x0, 0x3, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x9, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0})
 
 	tree := Tree{}
 	tree.rootPageNum = 0
@@ -127,11 +126,12 @@ func TestSplitInternal(t *testing.T) {
 	for i := uint16(1); i <= InternalNodeMaxCells; i++ {
 		p.Page(uint32(i))
 		root.SetInternalKey(i-1, uint32(i))
+		root.SetNumKeys(i)
 		root.SetChildPointer(i-1, uint32(i))
 	}
 
 	if root.RightChild() != uint32(0) {
-		t.Errorf("unexpected value for root.RightCHild, expected %d, got %d", uint32(0), root.RightChild())
+		t.Errorf("unexpected value for root.RightChild, expected %d, got %d", uint32(0), root.RightChild())
 	}
 	root.SetNumKeys(InternalNodeMaxCells)
 	p.Page(uint32(InternalNodeMaxCells + 1))
@@ -367,5 +367,28 @@ func TestCreateRoot(t *testing.T) {
 
 	if root.InternalKey(0) != 10 {
 		t.Errorf("unexpected value for root.InternalKey in cell 0, expected %d, got %d", 10, root.InternalKey(0))
+	}
+}
+
+func TestInsertLeaf(t *testing.T) {
+	tree := Tree{pager: &MemoryPager{}, rootPageNum: 0}
+
+	tree.Insert(1, Record{2, 3})
+
+	rootPage, _ := tree.pager.Page(0)
+
+	node := Node{page: rootPage}
+	node.SetIsRoot(true)
+
+	if node.NumCells() != 1 {
+		t.Errorf("unexpected number of cells in node after insert, expected %d, got %d", 1, node.NumCells())
+	}
+
+	for i := uint32(2); i < uint32(LeafNodeMaxCells)*2; i++ {
+		tree.Insert(i, Record{1 + 1, i + 2})
+	}
+
+	if node.Type() != InternalNode {
+		t.Errorf("unexpected node type for root after inserting too many records, expected %s, got %s", InternalNode, LeafNode)
 	}
 }

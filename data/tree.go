@@ -25,6 +25,26 @@ func (t Tree) Get(key uint32) Record {
 
 }
 
+func (t Tree) Insert(key uint32, data Record) {
+	// Add to tree
+	rootPage, _ := t.pager.Page(t.rootPageNum)
+	root := &Node{page: rootPage}
+	var c Cursor
+	var found bool
+	switch root.Type() {
+	case LeafNode:
+		c, found = t.leafNodeFind(root, key)
+
+	case InternalNode:
+		c, found = t.internalNodeFind(root, key)
+
+	}
+	if !found {
+		t.leafInsert(c, key, data)
+	}
+
+}
+
 func (t *Tree) internalNodeFind(n *Node, key uint32) (Cursor, bool) {
 	numKeys := n.NumKeys()
 	minIndex, maxIndex := uint16(0), numKeys
@@ -54,43 +74,38 @@ func (t *Tree) internalNodeFind(n *Node, key uint32) (Cursor, bool) {
 
 func (t *Tree) internalInsert(n *Node, key uint32, rightChildPageNum uint32) {
 	// If node is already full, need to call internalSplitAndInsert
-	numCells := n.NumCells()
-	if numCells >= InternalNodeMaxCells {
+	numKeys := n.NumKeys()
+	if numKeys >= InternalNodeMaxCells {
 		t.internalSplitAndInsert(n, key, rightChildPageNum)
 		return
 	}
 
 	// Find where it should go
-	lastKey := n.InternalKey(numCells - 1)
-	if key > lastKey {
-		n.SetInternalKey(numCells, key)
-		n.SetChildPointer(numCells, n.RightChild())
-		n.SetRightChild(rightChildPageNum)
-	} else {
-		// Find position of first key larger than it.
-		// Shuffle all keys and child pointers from that position one to the right
-		// Add new key and child pointer
-		numKeys := n.NumKeys()
-		minIndex, maxIndex := uint16(0), numKeys
-		for minIndex != maxIndex {
-			index := (minIndex + maxIndex) / 2
+	minIndex, maxIndex := uint16(0), numKeys
+	for minIndex != maxIndex {
+		index := (minIndex + maxIndex) / 2
 
-			keyToRight := n.InternalKey(index)
-			if keyToRight >= key {
-				maxIndex = index
-			} else {
-				minIndex += 1
-			}
+		keyToRight := n.InternalKey(index)
+		if keyToRight >= key {
+			maxIndex = index
+		} else {
+			minIndex += 1
 		}
-
-		// If not at the end, move cells over to make room
-		for idx := numCells; idx > minIndex; idx-- {
-			n.moveInternalCell(idx-1, idx)
-		}
-
-		n.SetInternalKey(minIndex, key)
-		n.SetChildPointer(minIndex, rightChildPageNum)
 	}
+
+	// Find position of first key larger than it.
+	// Shuffle all keys and child pointers from that position one to the right
+	// Add new key and child pointer
+	n.SetNumKeys(numKeys + 1)
+	// If not at the end, move cells over to make room
+	for idx := numKeys; idx > minIndex; idx-- {
+		n.SetInternalKey(idx, n.InternalKey(idx-1))
+		n.SetChildPointer(idx, n.ChildPointer(idx-1))
+	}
+	n.SetInternalKey(minIndex, key)
+
+	n.SetChildPointer(minIndex, rightChildPageNum)
+
 }
 
 func (t *Tree) internalSplitAndInsert(n *Node, key uint32, rightChildPageNum uint32) {

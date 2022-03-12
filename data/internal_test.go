@@ -70,9 +70,11 @@ func TestChildPointer(t *testing.T) {
 	for _, test := range tests {
 		p := Page(make([]byte, PageSize))
 		node := NewInternal(&p)
-		//copy(p[NumCellsOffset:NumCellsOffset+1], []byte{byte(test.cell + 1)})
+
 		offset := 12 + 8*int(test.cell)
 		copy(p[offset:offset+4], test.data)
+		// Set Num Keys to cell + 1, to avoid retrieving RightChild
+		copy(p[NumKeysOffset:NumKeysOffset+NumKeysSize], []byte{byte(test.cell + 1), 0x0})
 		actualResult := node.ChildPointer(test.cell)
 
 		if test.expectedResult != actualResult {
@@ -95,7 +97,9 @@ func TestSetChildPointer(t *testing.T) {
 	for _, test := range tests {
 		p := Page(make([]byte, PageSize))
 		node := NewInternal(&p)
-		//copy(p[NumCellsOffset:NumCellsOffset+1], []byte{byte(test.cell + 1)})
+
+		// Set Num Keys to cell + 1, to avoid using RightChild
+		copy(p[NumKeysOffset:NumKeysOffset+NumKeysSize], []byte{byte(test.cell + 1), 0x0})
 
 		node.SetChildPointer(test.cell, test.data)
 		offset := 12 + 8*int(test.cell)

@@ -62,7 +62,7 @@ func (n *Node) moveInternalCell(cell uint16, newCell uint16) {
 }
 
 func (i *Node) ChildPointer(childNum uint16) uint32 {
-	num_keys := InternalNodeMaxCells
+	num_keys := i.NumKeys()
 
 	if childNum == num_keys {
 		return i.RightChild()
@@ -73,7 +73,7 @@ func (i *Node) ChildPointer(childNum uint16) uint32 {
 }
 
 func (i *Node) SetChildPointer(childNum uint16, childPage uint32) {
-	num_keys := InternalNodeMaxCells
+	num_keys := i.NumKeys()
 
 	if childNum == num_keys {
 		i.SetRightChild(childPage)
