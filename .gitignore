@@ -21,3 +21,4 @@
 go.work
 
 .devcontainer.json
+.DS_Store
