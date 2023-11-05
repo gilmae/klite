@@ -3,7 +3,7 @@ package data
 import "testing"
 
 func TestSerialise(t *testing.T) {
-	r := Record{pageNum: 3, length: 513}
+	r := IndexItem{pageNum: 3, length: 513}
 	enc := Serialise(r)
 	expectedValue := []byte{3, 0, 0, 0, 1, 2, 0, 0}
 	if !bytesMatch(enc, expectedValue) {

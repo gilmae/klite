@@ -19,7 +19,7 @@ const (
 	LeafNodeKeySize   = uint16(unsafe.Sizeof(uint32(0)))
 	LeafNodeKeyOffset = 0
 
-	LeafNodeValueSize   = uint16(unsafe.Sizeof(Record{}))
+	LeafNodeValueSize   = uint16(unsafe.Sizeof(IndexItem{}))
 	LeafNodeValueOffset = LeafNodeKeySize + LeafNodeKeyOffset
 
 	LeafNodeCellSize        = LeafNodeKeySize + LeafNodeValueSize
@@ -47,6 +47,14 @@ func (n *Node) SetNumCells(c uint16) {
 	binary.LittleEndian.PutUint16((*n.page)[NumCellsOffset:NumCellsOffset+NumCellsSize], c)
 }
 
+func (n *Node) GetNextLeaf() uint32 {
+	return binary.LittleEndian.Uint32((*n.page)[NextLeafPointerOffset : NextLeafPointerOffset+NextLeafPointerSize])
+}
+
+func (n *Node) SetNextLeaf(c uint32) {
+	binary.LittleEndian.PutUint32((*n.page)[NextLeafPointerOffset:NextLeafPointerOffset+NextLeafPointerSize], c)
+}
+
 func (n *Node) getNodeCell(cellNum uint16) []byte {
 	cellOffset := LeafNodeHeaderSize + cellNum*LeafNodeCellSize
 	return (*n.page)[cellOffset : cellOffset+LeafNodeCellSize]
@@ -66,12 +74,12 @@ func (n *Node) SetNodeKey(cellNum uint16, key uint32) {
 	binary.LittleEndian.PutUint32(cell[LeafNodeKeyOffset:LeafNodeKeyOffset+LeafNodeKeySize], key)
 }
 
-func (n *Node) GetNodeValue(cellNum uint16) Record {
+func (n *Node) GetNodeValue(cellNum uint16) IndexItem {
 	cell := n.getNodeCell(cellNum)
 	return Deserialise(cell[LeafNodeKeySize:])
 }
 
-func (n *Node) SetNodeValue(cellNum uint16, r Record) {
+func (n *Node) SetNodeValue(cellNum uint16, r IndexItem) {
 	cell := n.getNodeCell(cellNum)
 	copy(cell[LeafNodeKeySize:LeafNodeKeySize+LeafNodeValueSize], Serialise(r))
 }

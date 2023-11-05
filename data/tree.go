@@ -5,7 +5,11 @@ type Tree struct {
 	rootPageNum uint32
 }
 
-func (t Tree) Get(key uint32) Record {
+func NewTree(pager Pager) *Tree {
+	return &Tree{pager: pager, rootPageNum: 0}
+}
+
+func (t *Tree) Get(key uint32) IndexItem {
 	rootPage, _ := t.pager.Page(t.rootPageNum)
 	root := &Node{page: rootPage}
 
@@ -21,11 +25,11 @@ func (t Tree) Get(key uint32) Record {
 			return c.Node.GetNodeValue(c.Index)
 		}
 	}
-	return Record{}
+	return IndexItem{}
 
 }
 
-func (t Tree) Insert(key uint32, data Record) {
+func (t *Tree) Insert(key uint32, data IndexItem) {
 	// Add to tree
 	rootPage, _ := t.pager.Page(t.rootPageNum)
 	root := &Node{page: rootPage}
@@ -194,7 +198,7 @@ func (t *Tree) leafNodeFind(n *Node, key uint32) (Cursor, bool) {
 	return c, false
 }
 
-func (t *Tree) leafInsert(c Cursor, key uint32, data Record) {
+func (t *Tree) leafInsert(c Cursor, key uint32, data IndexItem) {
 	n := c.Node
 	// If leaf is already full, need to call leafSplitAndInsert
 	numCells := n.NumCells()
@@ -216,7 +220,7 @@ func (t *Tree) leafInsert(c Cursor, key uint32, data Record) {
 	n.SetNodeValue(c.Index, data)
 }
 
-func (t *Tree) leafSplitAndInsert(c Cursor, key uint32, value Record) {
+func (t *Tree) leafSplitAndInsert(c Cursor, key uint32, value IndexItem) {
 	nextPageNum := t.pager.GetNextUnusedPageNum()
 	newPage, _ := t.pager.Page(nextPageNum) // TODO handle error
 	newLeaf := NewLeaf(newPage)

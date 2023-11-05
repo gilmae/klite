@@ -89,7 +89,7 @@ func TestSetLeafValue(t *testing.T) {
 	page := Page(make([]byte, PageSize))
 	leaf := NewNode(&page)
 	for _, test := range tests {
-		leaf.SetNodeValue(test.cell, Record{test.pageNum, test.length})
+		leaf.SetNodeValue(test.cell, IndexItem{test.pageNum, test.length})
 		bytes := (*leaf.page)[16+test.cell*12 : 24+test.cell*12]
 
 		if !bytesMatch(bytes, test.expectedData) {
