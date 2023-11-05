@@ -8,10 +8,15 @@ import (
 
 func TestWriteToStream(t *testing.T) {
 	pager := &data.MemoryPager{}
-	headPage, _ := pager.Page(0)
+	headPageNum := pager.GetNextUnusedPageNum()
+	headPage, _ := pager.Page(headPageNum)
 
 	head := InititaliseNode(headPage)
-	stream := NewStream(pager, 0, 0, 0, 1)
+	indexPageNum := pager.GetNextUnusedPageNum()
+	indexPage, _ := pager.Page(indexPageNum)
+	indexRootNode := data.NewLeaf(indexPage)
+
+	stream := NewStream(pager, headPageNum, headPageNum, 1, indexPageNum)
 
 	if head.NextFreePosition() != 12 {
 		t.Errorf("nextFreePosition is incorrect ,expected %+v, got %+v", 4092, head.NextFreePosition())
@@ -28,14 +33,25 @@ func TestWriteToStream(t *testing.T) {
 	if head.SpaceRemaining() != 0 {
 		t.Errorf("space remaining is incorrect ,expected %+v, got %+v", 4, head.SpaceRemaining())
 	}
+
+	if indexRootNode.GetMaxKey() != 1 {
+		t.Errorf("incorrect number of keys in index, expected %d, got %d", 1, indexRootNode.GetMaxKey())
+	}
+
 }
 
 func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	pager := &data.MemoryPager{}
-	headPage, _ := pager.Page(0)
+	headPageNum := pager.GetNextUnusedPageNum()
 
+	headPage, _ := pager.Page(headPageNum)
 	head := InititaliseNode(headPage)
-	stream := NewStream(pager, 0, 0, 0, 1)
+	indexPageNum := pager.GetNextUnusedPageNum()
+
+	stream := NewStream(pager, headPageNum, headPageNum, 1, indexPageNum)
+	indexPage, _ := pager.Page(indexPageNum)
+
+	indexRootNode := data.NewLeaf(indexPage)
 
 	stream.Add(make([]byte, 4083))
 	stream.Add([]byte{0x1, 0x2, 0x3})
@@ -56,6 +72,7 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 
 	if (*head).Next() != stream.tailPageNum {
 		t.Errorf("incorrect value for next page after headPage, expected %d, got %d", stream.tailPageNum, (*head).Next())
+
 	}
 
 	tailPage, _ := pager.Page(stream.tailPageNum)
@@ -66,4 +83,9 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	if (*tail).Previous() != stream.headPageNum {
 		t.Errorf("incorrect value for previous page before tailPage, expected %d, got %d", stream.headPageNum, (*tail).Previous())
 	}
+
+	if indexRootNode.GetMaxKey() != 2 {
+		t.Errorf("incorrect number of keys in index, expected %d, got %d", 2, indexRootNode.GetMaxKey())
+	}
+
 }

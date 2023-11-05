@@ -5,8 +5,8 @@ type Tree struct {
 	rootPageNum uint32
 }
 
-func NewTree(pager Pager) *Tree {
-	return &Tree{pager: pager, rootPageNum: 0}
+func NewTree(pager Pager, rootPageNum uint32) *Tree {
+	return &Tree{pager: pager, rootPageNum: rootPageNum}
 }
 
 func (t *Tree) Get(key uint32) IndexItem {

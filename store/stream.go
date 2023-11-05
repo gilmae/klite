@@ -15,17 +15,17 @@ type Stream struct {
 }
 
 func NewStream(p data.Pager, headPageNum uint32, tailPageNum uint32, nextKey uint32, indexPageNum uint32) *Stream {
-	t := data.NewTree(p)
+	t := data.NewTree(p, indexPageNum)
 	return &Stream{pager: p, headPageNum: headPageNum, tailPageNum: tailPageNum, nextKey: nextKey, index: *t}
 }
 
 func (s *Stream) Add(payload []byte) {
-	//nextKey := s.nextKey
+	nextKey := s.nextKey
 	dataWritten := 0 //len(data)
 
 	curPageNum := s.tailPageNum
 	curPage, _ := s.pager.Page(curPageNum)
-	//startPageNum := curPageNum
+	startPageNum := curPageNum
 	curNode := NewNode(curPage)
 
 	for dataWritten < len(payload) {
@@ -34,6 +34,7 @@ func (s *Stream) Add(payload []byte) {
 			nextNodePageNum := s.pager.GetNextUnusedPageNum()
 			nextNodePage, _ := s.pager.Page(nextNodePageNum)
 			nextNode := InititaliseNode(nextNodePage)
+
 			curNode.SetNext(nextNodePageNum)
 			nextNode.SetPrevious(curPageNum)
 			s.tailPageNum = nextNodePageNum
@@ -53,6 +54,7 @@ func (s *Stream) Add(payload []byte) {
 			}
 		}
 	}
-	//s.index.Insert(nextKey, data.NewIndexItem(startPageNum, uint32(len(payload))))
+
+	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, uint32(len(payload))))
 	s.nextKey += 1
 }
