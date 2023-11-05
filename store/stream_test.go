@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/gilmae/btree/data"
+	"github.com/gilmae/klite/data"
 )
 
 func TestWriteToStream(t *testing.T) {

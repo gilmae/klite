@@ -3,7 +3,7 @@ package store
 import (
 	"math"
 
-	"github.com/gilmae/btree/data"
+	"github.com/gilmae/klite/data"
 )
 
 type Stream struct {

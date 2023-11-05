@@ -1,4 +1,4 @@
-module github.com/gilmae/btree
+module github.com/gilmae/klite
 
 
 go 1.17

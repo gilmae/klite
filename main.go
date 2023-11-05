@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/gilmae/btree/data"
+	"github.com/gilmae/klite/data"
 )
 
 func main() {

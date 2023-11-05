@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/gilmae/btree/data"
+	"github.com/gilmae/klite/data"
 )
 
 /*
