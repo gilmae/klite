@@ -12,7 +12,7 @@ const (
 	NumCellsOffset = GenericHeaderSize
 
 	NextLeafPointerSize   = uint16(unsafe.Sizeof(uint32(0)))
-	NextLeafPointerOffset = GenericHeaderSize + NumCellsOffset
+	NextLeafPointerOffset = GenericHeaderSize + NumCellsSize
 
 	LeafNodeHeaderSize = GenericHeaderSize + NumCellsSize + NextLeafPointerSize
 

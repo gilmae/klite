@@ -27,7 +27,7 @@ func (s *Stream) Add(payload []byte) {
 	curPage, _ := s.pager.Page(curPageNum)
 	startPageNum := curPageNum
 	curNode := NewNode(curPage)
-
+	startingOffset := curNode.NextFreePosition()
 	for dataWritten < len(payload) {
 		bytesAvailable := curNode.SpaceRemaining()
 		if bytesAvailable <= 0 {
@@ -55,6 +55,6 @@ func (s *Stream) Add(payload []byte) {
 		}
 	}
 
-	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, uint32(len(payload))))
+	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
 	s.nextKey += 1
 }

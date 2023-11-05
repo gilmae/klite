@@ -197,7 +197,7 @@ func TestLeafFind(t *testing.T) {
 	}
 
 	page := Page(make([]byte, PageSize))
-	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0})
+	copy(page[0:], []byte{0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 0, 0, 0, 8, 0, 0, 0, 0, 0, 9, 0, 0, 0, 10, 0, 5, 0, 0, 0, 11, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 	leaf := NewNode(&page)
 	tree := Tree{}
 	for _, test := range tests {
@@ -222,10 +222,10 @@ func TestLeafInsert(t *testing.T) {
 		value         IndexItem
 		expectedBytes []byte
 	}{
-		{0, 1, IndexItem{1, 2}, []byte{1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0}},
-		{1, 2, IndexItem{3, 4}, []byte{2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0}},
-		{2, 3, IndexItem{5, 6}, []byte{3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0}},
-		{3, 4, IndexItem{7, 8}, []byte{4, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0}},
+		{0, 1, IndexItem{1, 0, 2}, []byte{1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0}},
+		{1, 2, IndexItem{3, 0, 4}, []byte{2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0}},
+		{2, 3, IndexItem{5, 0, 6}, []byte{3, 0, 0, 0, 5, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0}},
+		{3, 4, IndexItem{7, 0, 8}, []byte{4, 0, 0, 0, 7, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0}},
 		//{4, 5, Record{9, 10}, []byte{5, 0, 0, 0, 9, 0, 0, 0, 10, 0, 0, 0}},
 	}
 
@@ -252,7 +252,7 @@ func TestLeafSplit(t *testing.T) {
 	leaf.SetIsRoot(true)
 	for i := uint32(0); i < uint32(LeafNodeMaxCells)+1; i++ {
 		c, _ := tree.leafNodeFind(leaf, i)
-		tree.leafInsert(c, i, IndexItem{i, i})
+		tree.leafInsert(c, i, IndexItem{i, 0, i})
 	}
 
 	if tree.pager.GetNextUnusedPageNum() != 4 {
@@ -336,7 +336,7 @@ func TestCreateRoot(t *testing.T) {
 	root.SetType(LeafNode)
 	root.SetNumKeys(1)
 	root.SetNodeKey(0, 10)
-	root.SetNodeValue(0, IndexItem{2, 3})
+	root.SetNodeValue(0, IndexItem{2, 0, 3})
 
 	rightPageNum := tree.pager.GetNextUnusedPageNum()
 	rightPage, _ := tree.pager.Page(rightPageNum)
@@ -345,7 +345,7 @@ func TestCreateRoot(t *testing.T) {
 	rightNode.SetType(LeafNode)
 	rightNode.SetNumKeys(1)
 	rightNode.SetNodeKey(0, 40)
-	rightNode.SetNodeValue(0, IndexItem{5, 6})
+	rightNode.SetNodeValue(0, IndexItem{5, 0, 6})
 
 	tree.CreateNewRoot(rightPageNum)
 
@@ -373,7 +373,7 @@ func TestCreateRoot(t *testing.T) {
 func TestInsertLeaf(t *testing.T) {
 	tree := Tree{pager: &MemoryPager{}, rootPageNum: 0}
 
-	tree.Insert(1, IndexItem{2, 3})
+	tree.Insert(1, IndexItem{2, 0, 3})
 
 	rootPage, _ := tree.pager.Page(0)
 
@@ -385,7 +385,7 @@ func TestInsertLeaf(t *testing.T) {
 	}
 
 	for i := uint32(2); i < uint32(LeafNodeMaxCells)*2; i++ {
-		tree.Insert(i, IndexItem{1 + 1, i + 2})
+		tree.Insert(i, IndexItem{1 + 1, 0, i + 2})
 	}
 
 	if node.Type() != InternalNode {
