@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/gilmae/klite/data"
@@ -56,4 +57,61 @@ func TestWriteToNodeWithInsufficientSpace(t *testing.T) {
 		t.Errorf("bytesWritten is incorrect, expected %d, got %d.", 0, bytesWritten)
 	}
 
+}
+
+func TestReadFromNode(t *testing.T) {
+	tests := []struct {
+		offset            uint16
+		length            uint16
+		expectedBuffer    []byte
+		expectedBytesRead uint16
+		expectedError     error
+	}{
+		{0, 2, []byte{2, 3}, 2, nil},
+		{4094, 2, []byte{3, 1}, 2, nil},
+		{4095, 2, []byte{0, 0}, 0, fmt.Errorf("insufficent bytes to read, 1 bytes readable from offset")},
+	}
+
+	for _, test := range tests {
+
+		page := data.Page(make([]byte, data.PageSize))
+		if test.expectedError == nil {
+			copy(page[test.offset:test.offset+test.length], test.expectedBuffer)
+		}
+
+		node := InititaliseNode(&page)
+
+		buffer := make([]byte, test.length)
+
+		bytesRead, err := node.Read(test.offset, test.length, buffer)
+
+		if bytesRead < test.expectedBytesRead {
+			t.Errorf("incorrect bytesRead, expected %d, got %d", test.expectedBytesRead, bytesRead)
+		}
+
+		if err == nil && test.expectedError != nil {
+			t.Errorf("expected an error, %+v", test.expectedError)
+		}
+
+		if err != nil && test.expectedError == nil {
+			t.Errorf("unexpected error, got %+v", err)
+		}
+
+		if !bytesMatch(buffer, test.expectedBuffer) {
+			t.Errorf("incorrect buffer, expected %+v, got %+v", test.expectedBuffer, buffer)
+		}
+	}
+}
+
+func bytesMatch(x, y []byte) bool {
+	if len(x) != len(y) {
+		return false
+	}
+
+	for i, b := range x {
+		if b != y[i] {
+			return false
+		}
+	}
+	return true
 }

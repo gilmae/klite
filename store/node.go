@@ -77,3 +77,11 @@ func (n *Node) Write(data []byte) (uint16, error) {
 	n.SetNextFreePosition(uint16(nextFree + len(data)))
 	return uint16(len(data)), nil
 }
+
+func (n *Node) Read(offset uint16, length uint16, buffer []byte) (uint16, error) {
+	if offset+length > data.PageSize {
+		return 0, fmt.Errorf("insufficent bytes to read, %d bytes readable from offset", data.PageSize-offset)
+	}
+	copy(buffer, (*n.page)[offset:offset+length])
+	return length, nil
+}
