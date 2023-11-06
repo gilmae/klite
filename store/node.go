@@ -79,6 +79,10 @@ func (n *Node) Write(data []byte) (uint16, error) {
 }
 
 func (n *Node) Read(offset uint16, length uint16, buffer []byte) (uint16, error) {
+	if uint16(len(buffer)) < length {
+		return 0, fmt.Errorf("buffer too small")
+	}
+
 	if offset+length > data.PageSize {
 		return 0, fmt.Errorf("insufficent bytes to read, %d bytes readable from offset", data.PageSize-offset)
 	}
