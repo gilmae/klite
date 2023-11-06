@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gilmae/klite/data"
@@ -62,21 +61,22 @@ func TestWriteToNodeWithInsufficientSpace(t *testing.T) {
 func TestReadFromNode(t *testing.T) {
 	tests := []struct {
 		offset            uint16
-		length            uint16
+		length            uint32
+		bytes             []byte
 		expectedBuffer    []byte
-		expectedBytesRead uint16
+		expectedBytesRead uint32
 		expectedError     error
 	}{
-		{0, 2, []byte{2, 3}, 2, nil},
-		{4094, 2, []byte{3, 1}, 2, nil},
-		{4095, 2, []byte{0, 0}, 0, fmt.Errorf("insufficent bytes to read, 1 bytes readable from offset")},
+		{0, 2, []byte{2, 3}, []byte{2, 3}, 2, nil},
+		{4094, 2, []byte{3, 1}, []byte{3, 1}, 2, nil},
+		{4095, 2, []byte{2}, []byte{2, 0}, 1, nil},
 	}
 
 	for _, test := range tests {
 
 		page := data.Page(make([]byte, data.PageSize))
 		if test.expectedError == nil {
-			copy(page[test.offset:test.offset+test.length], test.expectedBuffer)
+			copy(page[test.offset:uint32(test.offset)+test.expectedBytesRead], test.expectedBuffer)
 		}
 
 		node := InititaliseNode(&page)

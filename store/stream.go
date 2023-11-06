@@ -58,3 +58,38 @@ func (s *Stream) Add(payload []byte) {
 	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
 	s.nextKey += 1
 }
+
+func (s *Stream) Get(key uint32) ([]byte, error) {
+	indexItem := s.index.Get(key)
+
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	curPageNum := indexItem.PageNum
+	curPage, err := s.pager.Page(curPageNum)
+
+	curOffset := indexItem.Offset
+
+	if err != nil {
+		return nil, err
+	}
+
+	buffer := make([]byte, indexItem.Length)
+	curNode := NewNode(curPage)
+
+	totalNumBytesRead := uint32(0)
+
+	for totalNumBytesRead < indexItem.Length {
+		numBytesRead, _ := curNode.Read(curOffset, indexItem.Length-totalNumBytesRead, buffer[totalNumBytesRead:])
+		totalNumBytesRead += numBytesRead
+
+		if totalNumBytesRead < indexItem.Length {
+			nextPageNum := curNode.Next()
+			nextPage, _ := s.pager.Page(nextPageNum)
+			curNode = NewNode(nextPage)
+			curOffset = HeaderSize
+		}
+	}
+	return buffer, nil
+}

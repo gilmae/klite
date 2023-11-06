@@ -89,3 +89,30 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	}
 
 }
+
+func ReadFromStream(t *testing.T) {
+	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
+
+	pager := &data.MemoryPager{}
+	headPageNum := pager.GetNextUnusedPageNum()
+	headPage, _ := pager.Page(headPageNum)
+
+	//head := InititaliseNode(headPage)
+	indexPageNum := pager.GetNextUnusedPageNum()
+	indexPage, _ := pager.Page(indexPageNum)
+
+	copy((*headPage)[20:24], expectedBuffer)
+	indexRootNode := data.NewLeaf(indexPage)
+
+	indexRootNode.SetNodeKey(0, 1)
+	indexRootNode.SetNodeValue(0, data.IndexItem{PageNum: headPageNum, Offset: 20, Length: 4})
+	indexRootNode.SetNumKeys(1)
+
+	stream := NewStream(pager, headPageNum, headPageNum, 1, indexPageNum)
+
+	actualBuffer, _ := stream.Get(0)
+
+	if !bytesMatch(actualBuffer, expectedBuffer) {
+		t.Errorf("incorrect buffer returned, expected %+v, got %+v", expectedBuffer, actualBuffer)
+	}
+}

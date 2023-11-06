@@ -3,7 +3,7 @@ package data
 import "testing"
 
 func TestSerialise(t *testing.T) {
-	r := IndexItem{pageNum: 3, length: 513}
+	r := IndexItem{PageNum: 3, Length: 513}
 	enc := Serialise(r)
 	expectedValue := []byte{3, 0, 0, 0, 0, 0, 1, 2, 0, 0}
 	if !bytesMatch(enc, expectedValue) {
@@ -18,11 +18,11 @@ func TestDeserialise(t *testing.T) {
 	expectedPageNum := uint32(7)
 	expectedLength := uint32(259)
 
-	if r.pageNum != expectedPageNum {
-		t.Errorf("incorrect r.pageNum, expected %d, got %d", expectedPageNum, r.pageNum)
+	if r.PageNum != expectedPageNum {
+		t.Errorf("incorrect r.pageNum, expected %d, got %d", expectedPageNum, r.PageNum)
 	}
 
-	if r.length != expectedLength {
-		t.Errorf("incorrect r.length, expected %d, got %d", expectedLength, r.length)
+	if r.Length != expectedLength {
+		t.Errorf("incorrect r.length, expected %d, got %d", expectedLength, r.Length)
 	}
 }

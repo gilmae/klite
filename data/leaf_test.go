@@ -65,12 +65,12 @@ func TestGetLeafValue(t *testing.T) {
 	leaf := NewNode(&page)
 	for _, test := range tests {
 		r := leaf.GetNodeValue(test.cell)
-		if r.pageNum != test.expectedPage {
-			t.Errorf("incorrect r.pageNum for cell %d, expected %d, got %d", test.cell, test.expectedPage, r.pageNum)
+		if r.PageNum != test.expectedPage {
+			t.Errorf("incorrect r.pageNum for cell %d, expected %d, got %d", test.cell, test.expectedPage, r.PageNum)
 		}
 
-		if r.length != test.expectedLength {
-			t.Errorf("incorrect r.length for cell %d, expected %d, got %d", test.cell, test.expectedLength, r.length)
+		if r.Length != test.expectedLength {
+			t.Errorf("incorrect r.length for cell %d, expected %d, got %d", test.cell, test.expectedLength, r.Length)
 		}
 	}
 }
