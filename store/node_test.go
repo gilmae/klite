@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/gilmae/klite/data"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewNode(t *testing.T) {
@@ -97,21 +98,8 @@ func TestReadFromNode(t *testing.T) {
 			t.Errorf("unexpected error, got %+v", err)
 		}
 
-		if !bytesMatch(buffer, test.expectedBuffer) {
+		if !cmp.Equal(buffer, test.expectedBuffer) {
 			t.Errorf("incorrect buffer, expected %+v, got %+v", test.expectedBuffer, buffer)
 		}
 	}
-}
-
-func bytesMatch(x, y []byte) bool {
-	if len(x) != len(y) {
-		return false
-	}
-
-	for i, b := range x {
-		if b != y[i] {
-			return false
-		}
-	}
-	return true
 }

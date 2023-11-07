@@ -1,9 +1,11 @@
 package store
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/gilmae/klite/data"
+	"github.com/google/go-cmp/cmp"
 )
 
 type Stream struct {
@@ -62,9 +64,9 @@ func (s *Stream) Add(payload []byte) {
 func (s *Stream) Get(key uint32) ([]byte, error) {
 	indexItem := s.index.Get(key)
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if cmp.Equal(indexItem, data.IndexItem{}) {
+		return nil, fmt.Errorf("key not found")
+	}
 
 	curPageNum := indexItem.PageNum
 	curPage, err := s.pager.Page(curPageNum)
