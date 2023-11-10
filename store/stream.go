@@ -59,6 +59,8 @@ func (s *Stream) Add(payload []byte) {
 
 	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
 	s.nextKey += 1
+	s.pager.Flush()
+	s.pager.Close()
 }
 
 func (s *Stream) Get(key uint32) ([]byte, error) {

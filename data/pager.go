@@ -6,7 +6,7 @@ import (
 )
 
 const PageSize = 4096
-const MAXPAGES = uint32(1000)
+const MAXPAGES = uint32(10000)
 
 type Page []byte
 
