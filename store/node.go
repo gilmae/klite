@@ -89,8 +89,6 @@ func (n *Node) Read(offset uint16, length uint32, buffer []byte) (uint32, error)
 		numBytesToRead = uint32(data.PageSize - offset)
 	}
 
-	fmt.Println(numBytesToRead)
-
 	copy(buffer, (*n.page)[uint32(offset):uint32(offset)+numBytesToRead])
 	return numBytesToRead, nil
 }

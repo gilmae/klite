@@ -26,7 +26,12 @@ func main() {
 	indexPage, _ := pager.Page(indexPageNum)
 	data.NewLeaf(indexPage)
 
-	stream := store.NewStream(pager, 0, 0, 1, indexPageNum)
+	headPageNum := pager.GetNextUnusedPageNum()
+
+	headPage, _ := pager.Page(headPageNum)
+	_ = store.InititaliseNode(headPage)
+
+	stream := store.NewStream(pager, headPageNum, headPageNum, 1, indexPageNum)
 
 	for i := uint32(0); i < 1; i++ {
 		stream.Add([]byte(fmt.Sprintf("Node %d", i)))
