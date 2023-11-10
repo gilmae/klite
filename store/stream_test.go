@@ -26,7 +26,7 @@ func TestWriteToStream(t *testing.T) {
 		t.Errorf("space remaining is incorrect ,expected %+v, got %+v", 4, head.SpaceRemaining())
 	}
 
-	stream.Add(make([]byte, 4084))
+	key, _ := stream.Add(make([]byte, 4084))
 
 	if head.NextFreePosition() != 4096 {
 		t.Errorf("nextFreePosition is incorrect ,expected %+v, got %+v", 4092, head.NextFreePosition())
@@ -37,6 +37,10 @@ func TestWriteToStream(t *testing.T) {
 
 	if indexRootNode.GetMaxKey() != 1 {
 		t.Errorf("incorrect number of keys in index, expected %d, got %d", 1, indexRootNode.GetMaxKey())
+	}
+
+	if key != 1 {
+		t.Errorf("incorrect key returned, expected %d, got %d", 1, key)
 	}
 
 }
@@ -88,7 +92,6 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	if indexRootNode.GetMaxKey() != 2 {
 		t.Errorf("incorrect number of keys in index, expected %d, got %d", 2, indexRootNode.GetMaxKey())
 	}
-
 }
 
 func ReadFromStream(t *testing.T) {

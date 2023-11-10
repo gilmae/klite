@@ -21,12 +21,16 @@ func NewStream(p data.Pager, headPageNum uint32, tailPageNum uint32, nextKey uin
 	return &Stream{pager: p, headPageNum: headPageNum, tailPageNum: tailPageNum, nextKey: nextKey, index: *t}
 }
 
-func (s *Stream) Add(payload []byte) {
-	nextKey := s.nextKey
-	dataWritten := 0 //len(data)
+func (s *Stream) Add(payload []byte) (uint32, error) {
+	key := s.nextKey
+	dataWritten := 0
 
 	curPageNum := s.tailPageNum
-	curPage, _ := s.pager.Page(curPageNum)
+	curPage, err := s.pager.Page(curPageNum)
+	if err != nil {
+		return 0, err
+	}
+
 	startPageNum := curPageNum
 	curNode := NewNode(curPage)
 	startingOffset := curNode.NextFreePosition()
@@ -34,7 +38,10 @@ func (s *Stream) Add(payload []byte) {
 		bytesAvailable := curNode.SpaceRemaining()
 		if bytesAvailable <= 0 {
 			nextNodePageNum := s.pager.GetNextUnusedPageNum()
-			nextNodePage, _ := s.pager.Page(nextNodePageNum)
+			nextNodePage, err := s.pager.Page(nextNodePageNum)
+			if err != nil {
+				return 0, err
+			}
 			nextNode := InititaliseNode(nextNodePage)
 
 			curNode.SetNext(nextNodePageNum)
@@ -57,8 +64,9 @@ func (s *Stream) Add(payload []byte) {
 		}
 	}
 
-	s.index.Insert(nextKey, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
+	s.index.Insert(key, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
 	s.nextKey += 1
+	return key, nil
 }
 
 func (s *Stream) Get(key uint32) ([]byte, error) {
