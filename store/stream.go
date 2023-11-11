@@ -1,31 +1,100 @@
 package store
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
+	"unsafe"
 
 	"github.com/gilmae/klite/data"
 	"github.com/google/go-cmp/cmp"
 )
 
+const (
+	IndexRootPageOffset = 0
+	IndexRootPageSize   = uint16(unsafe.Sizeof(uint32(0)))
+	StoreHeadPageOffset = IndexRootPageOffset + IndexRootPageSize
+	StoreHeadPageSize   = uint16(unsafe.Sizeof(uint32(0)))
+	StoreTailPageOffset = StoreHeadPageOffset + StoreHeadPageSize
+	StoreTailPageSize   = uint16(unsafe.Sizeof(uint32(0)))
+	NextKeyOffset       = StoreTailPageOffset + StoreTailPageSize
+	NextKeySize         = uint16(unsafe.Sizeof(uint32(0)))
+	StreamHeader        = NextKeyOffset + NextKeySize
+)
+
 type Stream struct {
-	pager       data.Pager
-	headPageNum uint32
-	tailPageNum uint32
-	nextKey     uint32
-	index       data.Tree
+	pager data.Pager
+	page  *data.Page
+	index data.Tree
 }
 
-func NewStream(p data.Pager, headPageNum uint32, tailPageNum uint32, nextKey uint32, indexPageNum uint32) *Stream {
-	t := data.NewTree(p, indexPageNum)
-	return &Stream{pager: p, headPageNum: headPageNum, tailPageNum: tailPageNum, nextKey: nextKey, index: *t}
+func NewStream(p data.Pager, rootPageNum uint32) *Stream {
+	stream := &Stream{pager: p}
+	stream.page, _ = stream.pager.Page(rootPageNum)
+
+	stream.index = *data.NewTree(p, stream.IndexPage())
+	return stream
+}
+
+func InitialiseStream(p data.Pager) *Stream {
+	stream := &Stream{pager: p}
+	streamRootPage := stream.pager.GetNextUnusedPageNum()
+	stream.page, _ = stream.pager.Page(streamRootPage)
+
+	indexRootPageNum := stream.pager.GetNextUnusedPageNum()
+	indexRootPage, _ := stream.pager.Page(indexRootPageNum)
+	data.NewLeaf(indexRootPage)
+	stream.SetIndexPage(indexRootPageNum)
+	stream.index = *data.NewTree(p, indexRootPageNum)
+
+	storeHeadPageNum := stream.pager.GetNextUnusedPageNum()
+	storeHeadPage, _ := stream.pager.Page(storeHeadPageNum)
+	InititaliseNode(storeHeadPage)
+	stream.SetStoreHeadPage(storeHeadPageNum)
+	stream.SetStoreTailPage(storeHeadPageNum)
+
+	stream.setNextKey(0)
+
+	return stream
+}
+
+func (s *Stream) IndexPage() uint32 {
+	return binary.LittleEndian.Uint32((*s.page)[IndexRootPageOffset : IndexRootPageOffset+IndexRootPageSize])
+}
+
+func (s *Stream) SetIndexPage(pageNum uint32) {
+	binary.LittleEndian.PutUint32((*s.page)[IndexRootPageOffset:IndexRootPageOffset+IndexRootPageSize], pageNum)
+}
+
+func (s *Stream) StoreHeadPage() uint32 {
+	return binary.LittleEndian.Uint32((*s.page)[StoreHeadPageOffset : StoreHeadPageOffset+StoreHeadPageSize])
+}
+
+func (s *Stream) SetStoreHeadPage(pageNum uint32) {
+	binary.LittleEndian.PutUint32((*s.page)[StoreHeadPageOffset:StoreHeadPageOffset+StoreHeadPageSize], pageNum)
+}
+
+func (s *Stream) StoreTailPage() uint32 {
+	return binary.LittleEndian.Uint32((*s.page)[StoreTailPageOffset : StoreTailPageOffset+StoreHeadPageSize])
+}
+
+func (s *Stream) SetStoreTailPage(pageNum uint32) {
+	binary.LittleEndian.PutUint32((*s.page)[StoreTailPageOffset:StoreTailPageOffset+StoreTailPageSize], pageNum)
+}
+
+func (s *Stream) NextKey() uint32 {
+	return binary.LittleEndian.Uint32((*s.page)[NextKeyOffset : NextKeyOffset+NextKeySize])
+}
+
+func (s *Stream) setNextKey(key uint32) {
+	binary.LittleEndian.PutUint32((*s.page)[NextKeyOffset:NextKeyOffset+NextKeySize], key)
 }
 
 func (s *Stream) Add(payload []byte) (uint32, error) {
-	key := s.nextKey
+	key := s.NextKey()
 	dataWritten := 0
 
-	curPageNum := s.tailPageNum
+	curPageNum := s.StoreTailPage()
 	curPage, err := s.pager.Page(curPageNum)
 	if err != nil {
 		return 0, err
@@ -46,7 +115,7 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 
 			curNode.SetNext(nextNodePageNum)
 			nextNode.SetPrevious(curPageNum)
-			s.tailPageNum = nextNodePageNum
+			s.SetStoreTailPage(nextNodePageNum)
 
 			curPageNum = nextNodePageNum
 			curNode = nextNode
@@ -65,7 +134,7 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 	}
 
 	s.index.Insert(key, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
-	s.nextKey += 1
+	s.setNextKey(key + 1)
 	return key, nil
 }
 
