@@ -1,11 +1,41 @@
 # What is this?
-An implementation of a btree
 
-## Why is this?
 I have an idea for an embedded kafka. Sqlite is an embedded relational database with a sql engine. Embedded meaning you add a dependency/lib and it can be used in code to access a relational database. Same thing, but for an event journal like Kafka.
+
+klite. Dekaf. I can't decide what to call it
 
 It's kind of a dumb idea, yeah, but it's an idea I want to play with because why not.
 
-So it starts with a btree. And because this btree is a means to an end, it's not all generic. The values this btree are holding are very specific. They are two uint32s. Exactly what those uint32s _mean_ is a little unclear to me at the moment. I am pretty sure the first is a page number in the file. The second might be a length of bytes. It might be a length of pages. The idea being that the messages being stored will be stored as blobs, and the values in the tree just point off to where the blob corresponding to a key can be found.
+## The Plan
+Intention is to be a (mostly) append-only stream of data, that can later be retrieved by key and in chunks. The query language might look something like:
 
-Which I am pretty sure is how sqlite does it.
+`ADD $data TO $stream`
+
+`GET $key FROM $stream`
+
+`GET $key[, $key2[, $key3]] FROM $stream`
+
+`GET $num AFTER $key FROM $stream`
+
+`GET $num BEFORE $key FROM $stream`
+
+### Currently we have:
+
+1. A linked list of nodes that acts as the value store.
+2. A b-tree index of keys. Each node value in the b-tree points to:
+    1. A page in the linked list
+    2. The offset within the page where the value starts
+    3. A length. The data can span multiple nodes in the linked list, which are pages of 4096 bytes.
+3. Functions to add new sets of data to the stream
+4. Functions to retrieve data from the stream by key
+
+### What we think we need
+* Header on the values in the linked list that holds the key and length.
+* To help support the BEFORE and AFTER commands, Next and Previous links in the value headers
+* A repl (plus command parser)
+* Support for multiple streams. Not sure how to store a hash of string to stream root page in the file. Another B Tree?
+
+More long range things:
+
+* Transactions
+* Expiring items
