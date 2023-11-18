@@ -36,7 +36,7 @@ func NewStream(p data.Pager, rootPageNum uint32) *Stream {
 	return stream
 }
 
-func InitialiseStream(p data.Pager) *Stream {
+func InitialiseStream(p data.Pager) (*Stream, uint32) {
 	stream := &Stream{pager: p}
 	streamRootPage := stream.pager.GetNextUnusedPageNum()
 	stream.page, _ = stream.pager.Page(streamRootPage)
@@ -55,7 +55,7 @@ func InitialiseStream(p data.Pager) *Stream {
 
 	stream.setNextKey(0)
 
-	return stream
+	return stream, streamRootPage
 }
 
 func (s *Stream) IndexPage() uint32 {
@@ -103,6 +103,7 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 	startPageNum := curPageNum
 	curNode := NewNode(curPage)
 	startingOffset := curNode.NextFreePosition()
+
 	for dataWritten < len(payload) {
 		bytesAvailable := curNode.SpaceRemaining()
 		if bytesAvailable <= 0 {

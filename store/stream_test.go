@@ -10,7 +10,7 @@ import (
 func TestWriteToStream(t *testing.T) {
 	pager := &data.MemoryPager{}
 
-	stream := InitialiseStream(pager)
+	stream, _ := InitialiseStream(pager)
 
 	headPage, _ := pager.Page(stream.StoreHeadPage())
 	head := InititaliseNode(headPage)
@@ -45,7 +45,7 @@ func TestWriteToStream(t *testing.T) {
 
 func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	pager := &data.MemoryPager{}
-	stream := InitialiseStream(pager)
+	stream, _ := InitialiseStream(pager)
 
 	headPage, _ := pager.Page(stream.StoreHeadPage())
 	head := NewNode(headPage)
@@ -92,7 +92,7 @@ func ReadFromStream(t *testing.T) {
 	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
 
 	pager := &data.MemoryPager{}
-	stream := InitialiseStream(pager)
+	stream, _ := InitialiseStream(pager)
 
 	headPage, _ := pager.Page(stream.StoreHeadPage())
 
@@ -118,7 +118,7 @@ func ReadFromStreamUsingInvalidKey(t *testing.T) {
 	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
 
 	pager := &data.MemoryPager{}
-	stream := InitialiseStream(pager)
+	stream, _ := InitialiseStream(pager)
 
 	headPage, _ := pager.Page(stream.StoreHeadPage())
 

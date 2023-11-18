@@ -2,40 +2,34 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gilmae/klite/data"
-	"github.com/gilmae/klite/store"
+	"github.com/gilmae/klite/environment"
 )
 
 func main() {
-	// var pager data.Pager
-	// _ = pager.GetNextUnusedPageNum()
-	// pager, _ = data.NewFilePager(".test.db")
-	// tree := data.NewTree(pager, pager.GetNextUnusedPageNum())
-	// for i := uint32(0); i < 1000; i++ {
-	// 	tree.Insert(i+1, data.NewIndexItem(i, 0, i+1))
-	// }
-	// (pager).Flush()
-	// (pager).Close()
-
-	// record := tree.Get(2)
-	// fmt.Println(record)
 
 	pager, _ := data.NewFilePager(".test.db")
-	indexPageNum := pager.GetNextUnusedPageNum()
-	indexPage, _ := pager.Page(indexPageNum)
-	data.NewLeaf(indexPage)
 
-	headPageNum := pager.GetNextUnusedPageNum()
+	env, err := environment.NewEnvironment(pager)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if !env.IsInitialised() {
+		err = env.Initialise()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
 
-	headPage, _ := pager.Page(headPageNum)
-	_ = store.InititaliseNode(headPage)
-
-	stream := store.NewStream(pager, headPageNum, headPageNum, 1, indexPageNum)
-
-	for i := uint32(0); i < 1; i++ {
+	stream := env.GetStream()
+	for i := uint32(0); i < 10; i++ {
 		stream.Add([]byte(fmt.Sprintf("Node %d", i)))
 	}
-	(pager).Flush()
-	(pager).Close()
+
+	pager.Flush()
+	pager.Close()
 }
