@@ -23,7 +23,9 @@ const (
 	NextPageSize           = uint16(unsafe.Sizeof(uint32(0)))
 	NextFreePositionOffset = NextPageOffset + NextPageSize
 	NextFreePositionSize   = uint16(unsafe.Sizeof(uint32(0)))
-	HeaderSize             = NextFreePositionOffset + NextFreePositionSize
+	//LastValueWritenOffset  = NextFreePositionOffset + NextFreePositionSize
+	//LastValueWrittenSize   = uint16(unsafe.Sizeof(uint32(0)))
+	HeaderSize = NextFreePositionOffset + NextFreePositionSize //LastValueWritenOffset + LastValueWrittenSize
 )
 
 type Node struct {
@@ -63,6 +65,18 @@ func (n *Node) NextFreePosition() uint16 {
 func (n *Node) SetNextFreePosition(nextFreePos uint16) {
 	binary.LittleEndian.PutUint16((*n.page)[NextFreePositionOffset:NextFreePositionOffset+NextFreePositionSize], nextFreePos)
 }
+
+func (n *Node) CloseNode() {
+	n.SetNextFreePosition(data.PageSize)
+}
+
+// func (n *Node) LastValueWrittenPosition() uint16 {
+// 	return binary.LittleEndian.Uint16((*n.page)[LastValueWritenOffset : LastValueWritenOffset+LastValueWrittenSize])
+// }
+
+// func (n *Node) SetLastValueWrittenPosition(lastValueWritten uint16) {
+// 	binary.LittleEndian.PutUint16((*n.page)[LastValueWritenOffset:LastValueWritenOffset+LastValueWrittenSize], lastValueWritten)
+// }
 
 func (n *Node) SpaceRemaining() uint16 {
 	return data.PageSize - n.NextFreePosition()

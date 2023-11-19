@@ -1,10 +1,10 @@
 package store
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/gilmae/klite/data"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestWriteToStream(t *testing.T) {
@@ -24,7 +24,7 @@ func TestWriteToStream(t *testing.T) {
 		t.Errorf("space remaining is incorrect ,expected %+v, got %+v", 4, head.SpaceRemaining())
 	}
 
-	key, _ := stream.Add(make([]byte, 4084))
+	key, _ := stream.Add(make([]byte, 4070))
 
 	if head.NextFreePosition() != 4096 {
 		t.Errorf("nextFreePosition is incorrect ,expected %+v, got %+v", 4092, head.NextFreePosition())
@@ -41,6 +41,12 @@ func TestWriteToStream(t *testing.T) {
 		t.Errorf("incorrect key returned, expected %d, got %d", 0, key)
 	}
 
+	expectedHeaderBytes := []byte{0x0, 0, 0, 0, 0xE6, 0xF, 0, 0, 0, 0, 0, 0, 0, 0}
+	actualHeaderBytes := (*headPage)[12:26]
+
+	if !bytes.Equal(expectedHeaderBytes, actualHeaderBytes) {
+		t.Errorf("data header incorrect, expected %+v, got %+v", expectedHeaderBytes, actualHeaderBytes)
+	}
 }
 
 func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
@@ -52,7 +58,7 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	indexPage, _ := pager.Page(stream.IndexPage())
 	indexRootNode := data.NewNode(indexPage)
 
-	stream.Add(make([]byte, 4083))
+	stream.Add(make([]byte, 4055))
 	stream.Add([]byte{0x1, 0x2, 0x3})
 
 	if stream.StoreHeadPage() == stream.StoreTailPage() {
@@ -100,7 +106,7 @@ func ReadFromStream(t *testing.T) {
 	copy((*headPage)[20:24], expectedBuffer)
 	indexRootNode := data.NewNode(indexPage)
 
-	indexRootNode.SetNodeKey(0, 1)
+	indexRootNode.SetNodeKey(0, 0)
 	indexRootNode.SetNodeValue(0, data.IndexItem{PageNum: stream.StoreHeadPage(), Offset: 20, Length: 4})
 	indexRootNode.SetNumKeys(1)
 
@@ -109,7 +115,7 @@ func ReadFromStream(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error, got %+v", err)
 	}
-	if !cmp.Equal(actualBuffer, expectedBuffer) {
+	if !bytes.Equal(actualBuffer, expectedBuffer) {
 		t.Errorf("incorrect buffer returned, expected %+v, got %+v", expectedBuffer, actualBuffer)
 	}
 }
@@ -126,7 +132,7 @@ func ReadFromStreamUsingInvalidKey(t *testing.T) {
 	copy((*headPage)[20:24], expectedBuffer)
 	indexRootNode := data.NewLeaf(indexPage)
 
-	indexRootNode.SetNodeKey(0, 1)
+	indexRootNode.SetNodeKey(0, 0)
 	indexRootNode.SetNodeValue(0, data.IndexItem{PageNum: stream.StoreHeadPage(), Offset: 20, Length: 4})
 	indexRootNode.SetNumKeys(1)
 

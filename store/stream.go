@@ -91,6 +91,14 @@ func (s *Stream) setNextKey(key uint32) {
 }
 
 func (s *Stream) Add(payload []byte) (uint32, error) {
+	/*
+		1. Get next write position
+		2. If no room for header, close tail page and create new one
+		3. Write header
+		4. Write data, iterating through new pages as required
+		5. Update header of last item to point to new item
+	*/
+
 	key := s.NextKey()
 	dataWritten := 0
 
@@ -100,27 +108,35 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 		return 0, err
 	}
 
-	startPageNum := curPageNum
 	curNode := NewNode(curPage)
+
+	itemHeader := NewStoreItem(key, uint32(len(payload)), 0, 0)
+	serialisedHeader := Serialise(itemHeader)
+
+	// Do we have enough room for the header?
+	// If not, block off remianing bytes and get a new tail
+	if curNode.SpaceRemaining() < uint16(len(serialisedHeader)) {
+		curNode.CloseNode()
+		curPageNum, curNode, err = s.makeNewTailNode(curPageNum, curNode)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	startPageNum := curPageNum
 	startingOffset := curNode.NextFreePosition()
+
+	// Write the header
+	curNode.Write(serialisedHeader)
 
 	for dataWritten < len(payload) {
 		bytesAvailable := curNode.SpaceRemaining()
 		if bytesAvailable <= 0 {
-			nextNodePageNum := s.pager.GetNextUnusedPageNum()
-			nextNodePage, err := s.pager.Page(nextNodePageNum)
+			curPageNum, curNode, err = s.makeNewTailNode(curPageNum, curNode)
 			if err != nil {
 				return 0, err
 			}
-			nextNode := InititaliseNode(nextNodePage)
 
-			curNode.SetNext(nextNodePageNum)
-			nextNode.SetPrevious(curPageNum)
-			s.SetStoreTailPage(nextNodePageNum)
-
-			curPageNum = nextNodePageNum
-			curNode = nextNode
-			curPage = nextNodePage
 		} else {
 			bytesToWrite := int(math.Min(float64(bytesAvailable), float64(len(payload))))
 			if bytesToWrite+dataWritten > len(payload) {
@@ -140,20 +156,31 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 }
 
 func (s *Stream) Get(key uint32) ([]byte, error) {
+
 	indexItem := s.index.Get(key)
 
 	if cmp.Equal(indexItem, data.IndexItem{}) {
 		return nil, fmt.Errorf("key not found")
 	}
 
-	curPageNum := indexItem.PageNum
-	curPage, err := s.pager.Page(curPageNum)
-
 	curOffset := indexItem.Offset
+	curPageNum := indexItem.PageNum
 
+	curPage, err := s.pager.Page(curPageNum)
 	if err != nil {
 		return nil, err
 	}
+
+	header := Deserialise((*curPage)[curOffset : curOffset+14])
+
+	if header.Key != key {
+		return nil, fmt.Errorf("incorrect key found in header")
+	}
+	if header.Length != indexItem.Length {
+		return nil, fmt.Errorf("length mismatch")
+	}
+
+	curOffset += 14
 
 	buffer := make([]byte, indexItem.Length)
 	curNode := NewNode(curPage)
@@ -172,4 +199,19 @@ func (s *Stream) Get(key uint32) ([]byte, error) {
 		}
 	}
 	return buffer, nil
+}
+
+func (s *Stream) makeNewTailNode(curPageNum uint32, curNode *Node) (uint32, *Node, error) {
+	newPageNum := s.pager.GetNextUnusedPageNum()
+	newPage, err := s.pager.Page(newPageNum)
+	if err != nil {
+		return 0, nil, err
+	}
+	newNode := InititaliseNode(newPage)
+
+	curNode.SetNext(newPageNum)
+	newNode.SetPrevious(curPageNum)
+	s.SetStoreTailPage(newPageNum)
+
+	return newPageNum, newNode, nil
 }
