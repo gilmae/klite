@@ -94,7 +94,7 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	}
 }
 
-func ReadFromStream(t *testing.T) {
+func TestReadFromStream(t *testing.T) {
 	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
 
 	pager := &data.MemoryPager{}
@@ -120,7 +120,7 @@ func ReadFromStream(t *testing.T) {
 	}
 }
 
-func ReadFromStreamUsingInvalidKey(t *testing.T) {
+func TestReadFromStreamUsingInvalidKey(t *testing.T) {
 	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
 
 	pager := &data.MemoryPager{}
