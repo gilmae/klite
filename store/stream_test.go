@@ -47,6 +47,50 @@ func TestWriteToStream(t *testing.T) {
 	if !bytes.Equal(expectedHeaderBytes, actualHeaderBytes) {
 		t.Errorf("data header incorrect, expected %+v, got %+v", expectedHeaderBytes, actualHeaderBytes)
 	}
+
+	if stream.LastValueWrittenPage() != stream.StoreHeadPage() {
+		t.Errorf("lastWrittenPage incorrect, expected %d, got %d", stream.StoreHeadPage(), stream.LastValueWrittenPage())
+	}
+
+	if stream.LastValueWrittenPos() != 12 {
+		t.Errorf("lastWrittenPos incorrect, expected %d, got %d", stream.LastValueWrittenPos(), 12)
+	}
+}
+
+func TestValueHeaderIsAssignedNextValueDetails(t *testing.T) {
+	pager := &data.MemoryPager{}
+
+	stream, _ := InitialiseStream(pager)
+
+	headPage, _ := pager.Page(stream.StoreHeadPage())
+	_ = InititaliseNode(headPage)
+	indexPage, _ := pager.Page(stream.IndexPage())
+	_ = data.NewNode(indexPage)
+
+	stream.Add(make([]byte, 4055))
+	stream.Add([]byte{0x1, 0x2, 0x3})
+
+	valueHeader := ReadHeader(headPage, 12)
+
+	if valueHeader.NextItemPageNum != stream.StoreHeadPage() {
+		t.Errorf("newItemPageNum of first value header incorrect, expected %d, got %d", stream.StoreHeadPage(), valueHeader.NextItemPageNum)
+	}
+
+	if valueHeader.NextItemOffset != 4081 { // Start from 12 + 4055 bytes + 14 for the header
+		t.Errorf("newItemOffset of first value header incorrect, expected %d, got %d", 4081, valueHeader.NextItemOffset)
+	}
+
+	stream.Add([]byte{0x4, 0x5, 0x6})
+
+	valueHeader = ReadHeader(headPage, 4081)
+
+	if valueHeader.NextItemPageNum != stream.StoreTailPage() {
+		t.Errorf("newItemPageNum of second value header incorrect, expected %d, got %d", stream.StoreTailPage(), valueHeader.NextItemPageNum)
+	}
+
+	if valueHeader.NextItemOffset != 14 { // Start from 12 + 4055 bytes + 14 for the header
+		t.Errorf("newItemOffset of second value header incorrect, expected %d, got %d", 14, valueHeader.NextItemOffset)
+	}
 }
 
 func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
@@ -92,6 +136,7 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	if indexRootNode.GetMaxKey() != 1 {
 		t.Errorf("incorrect max key in index, expected %d, got %d", 1, indexRootNode.GetMaxKey())
 	}
+
 }
 
 func TestReadFromStream(t *testing.T) {

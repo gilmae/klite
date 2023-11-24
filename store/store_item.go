@@ -10,7 +10,11 @@ PrevRecordOffset
 
 */
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+
+	"github.com/gilmae/klite/data"
+)
 
 type StoreItem struct {
 	Key             uint32
@@ -21,6 +25,14 @@ type StoreItem struct {
 
 func NewStoreItem(key uint32, length uint32, nextItemPageNum uint32, nextItemOffset uint16) StoreItem {
 	return StoreItem{Key: key, NextItemPageNum: nextItemPageNum, NextItemOffset: nextItemOffset, Length: length}
+}
+
+func ReadHeader(p *data.Page, offset uint16) StoreItem {
+	return Deserialise((*p)[offset : offset+14])
+}
+
+func WriteHeader(p *data.Page, header StoreItem, offset uint16) {
+	copy((*p)[offset:offset+14], Serialise(header))
 }
 
 func Deserialise(enc []byte) StoreItem {

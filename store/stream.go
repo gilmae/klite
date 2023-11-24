@@ -11,15 +11,19 @@ import (
 )
 
 const (
-	IndexRootPageOffset = 0
-	IndexRootPageSize   = uint16(unsafe.Sizeof(uint32(0)))
-	StoreHeadPageOffset = IndexRootPageOffset + IndexRootPageSize
-	StoreHeadPageSize   = uint16(unsafe.Sizeof(uint32(0)))
-	StoreTailPageOffset = StoreHeadPageOffset + StoreHeadPageSize
-	StoreTailPageSize   = uint16(unsafe.Sizeof(uint32(0)))
-	NextKeyOffset       = StoreTailPageOffset + StoreTailPageSize
-	NextKeySize         = uint16(unsafe.Sizeof(uint32(0)))
-	StreamHeader        = NextKeyOffset + NextKeySize
+	IndexRootPageOffset        = 0
+	IndexRootPageSize          = uint16(unsafe.Sizeof(uint32(0)))
+	StoreHeadPageOffset        = IndexRootPageOffset + IndexRootPageSize
+	StoreHeadPageSize          = uint16(unsafe.Sizeof(uint32(0)))
+	StoreTailPageOffset        = StoreHeadPageOffset + StoreHeadPageSize
+	StoreTailPageSize          = uint16(unsafe.Sizeof(uint32(0)))
+	NextKeyOffset              = StoreTailPageOffset + StoreTailPageSize
+	NextKeySize                = uint16(unsafe.Sizeof(uint32(0)))
+	LastValueWrittenPageOffset = NextKeyOffset + NextKeySize
+	LastValueWrittenPageSize   = uint16(unsafe.Sizeof(uint32(0)))
+	LastValueWrittenPosOffset  = LastValueWrittenPageOffset + LastValueWrittenPageSize
+	LastValueWrittenPosSize    = uint16(unsafe.Sizeof(uint16(0)))
+	StreamHeader               = LastValueWrittenPosOffset + LastValueWrittenPosSize
 )
 
 type Stream struct {
@@ -90,6 +94,22 @@ func (s *Stream) setNextKey(key uint32) {
 	binary.LittleEndian.PutUint32((*s.page)[NextKeyOffset:NextKeyOffset+NextKeySize], key)
 }
 
+func (s *Stream) LastValueWrittenPage() uint32 {
+	return binary.LittleEndian.Uint32((*s.page)[LastValueWrittenPageOffset : LastValueWrittenPageOffset+LastValueWrittenPageSize])
+}
+
+func (s *Stream) setLastValueWrittenPage(key uint32) {
+	binary.LittleEndian.PutUint32((*s.page)[LastValueWrittenPageOffset:LastValueWrittenPageOffset+LastValueWrittenPageSize], key)
+}
+
+func (s *Stream) LastValueWrittenPos() uint16 {
+	return binary.LittleEndian.Uint16((*s.page)[LastValueWrittenPosOffset : LastValueWrittenPosOffset+LastValueWrittenPosSize])
+}
+
+func (s *Stream) setLastValueWrittenPos(key uint16) {
+	binary.LittleEndian.PutUint16((*s.page)[LastValueWrittenPosOffset:LastValueWrittenPosOffset+LastValueWrittenPosSize], key)
+}
+
 func (s *Stream) Add(payload []byte) (uint32, error) {
 	/*
 		1. Get next write position
@@ -150,6 +170,22 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 		}
 	}
 
+	// Update the Next Item details of the last Item
+	lastItemPageNum := s.LastValueWrittenPage()
+	lastItemPage, _ := s.pager.Page(lastItemPageNum)
+	lastItemPos := s.LastValueWrittenPos()
+	lastItemHeader := ReadHeader(lastItemPage, lastItemPos)
+
+	lastItemHeader.NextItemPageNum = startPageNum
+	lastItemHeader.NextItemOffset = startingOffset
+
+	WriteHeader(lastItemPage, lastItemHeader, lastItemPos)
+
+	// Update the last item details of the stream with this item
+	s.setLastValueWrittenPage(startPageNum)
+	s.setLastValueWrittenPos(startingOffset)
+
+	// Add to index
 	s.index.Insert(key, data.NewIndexItem(startPageNum, startingOffset, uint32(len(payload))))
 	s.setNextKey(key + 1)
 	return key, nil
