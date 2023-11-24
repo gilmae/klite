@@ -95,6 +95,8 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 }
 
 func TestReadFromStream(t *testing.T) {
+
+	//headerBuffer := []byte{0, 0, 0, 0, 1, 0, 0, 0}
 	expectedBuffer := []byte{0x1, 0x2, 0x3, 0x4}
 
 	pager := &data.MemoryPager{}
@@ -103,7 +105,12 @@ func TestReadFromStream(t *testing.T) {
 	headPage, _ := pager.Page(stream.StoreHeadPage())
 
 	indexPage, _ := pager.Page(stream.IndexPage())
-	copy((*headPage)[20:24], expectedBuffer)
+
+	// Add the actual value to the node
+	copy((*headPage)[34:38], expectedBuffer)
+
+	// Add the value header to the node
+	copy((*headPage)[20:28], []byte{0, 0, 0, 0, 4, 0, 0, 0})
 	indexRootNode := data.NewNode(indexPage)
 
 	indexRootNode.SetNodeKey(0, 0)
