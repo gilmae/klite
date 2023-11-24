@@ -30,7 +30,8 @@ func main() {
 		stream.Add([]byte(fmt.Sprintf("Node %d", i)))
 	}
 
-	fmt.Println(stream.Get(0))
+	item, _ := stream.Get(2)
+	fmt.Println(string(item))
 
 	pager.Flush()
 	pager.Close()
