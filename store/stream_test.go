@@ -188,12 +188,40 @@ func TestReadFromStreamUsingInvalidKey(t *testing.T) {
 	indexRootNode.SetNodeValue(0, data.IndexItem{PageNum: stream.StoreHeadPage(), Offset: 20, Length: 4})
 	indexRootNode.SetNumKeys(1)
 
-	actualBuffer, err := stream.Get(0)
+	actualBuffer, err := stream.Get(2)
 	if err == nil {
-		t.Errorf("expected an error")
+		t.Errorf("expected an error for invalid key")
 	}
 
 	if actualBuffer != nil {
 		t.Errorf("incorrect buffer returned, got %+v", actualBuffer)
+	}
+}
+
+func TestReadMultiple(t *testing.T) {
+	pager := &data.MemoryPager{}
+	stream, _ := InitialiseStream(pager)
+
+	expectedItem1 := []byte{0x1, 0x2, 0x3}
+	expectedItem2 := []byte{0x4, 0x5, 0x6}
+	stream.Add(expectedItem1)
+	stream.Add(expectedItem2)
+
+	items, err := stream.GetFrom(0, 2)
+
+	if err != nil {
+		t.Errorf("Unexpected error, got %s", err)
+	}
+
+	if len(items) < 2 {
+		t.Errorf("incorrect number of items recived, expected %d, got %d", 2, len(items))
+	}
+
+	if !bytes.Equal(expectedItem1, items[0]) {
+		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem1, items[0])
+	}
+
+	if !bytes.Equal(expectedItem2, items[1]) {
+		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem2, items[1])
 	}
 }
