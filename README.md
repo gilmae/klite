@@ -28,9 +28,9 @@ Intention is to be a (mostly) append-only stream of data, that can later be retr
     3. A length. The data can span multiple nodes in the linked list, which are pages of 4096 bytes.
 3. Functions to add new sets of data to the stream
 4. Functions to retrieve data from the stream by key
+5. Functions to retrieve n items from the stream starting with key x
 
 ### What we think we need
-* Header on the values in the linked list that holds the key and length.
 * To help support the BEFORE and AFTER commands, Next and Previous links in the value headers
 * A repl (plus command parser)
 * Support for multiple streams. Not sure how to store a hash of string to stream root page in the file. Another B Tree?

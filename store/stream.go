@@ -192,49 +192,73 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 }
 
 func (s *Stream) Get(key uint32) ([]byte, error) {
+	items, err := s.GetFrom(key, 1)
+	if err != nil {
+		return nil, err
+	}
 
+	return items[0], nil
+
+}
+
+func (s *Stream) GetFrom(key uint32, num uint16) ([][]byte, error) {
+	items := make([][]byte, num)
 	indexItem := s.index.Get(key)
 
 	if cmp.Equal(indexItem, data.IndexItem{}) {
 		return nil, fmt.Errorf("key not found")
 	}
 
-	curOffset := indexItem.Offset
-	curPageNum := indexItem.PageNum
+	pageNum := indexItem.PageNum
+	offset := indexItem.Offset
+
+	for i, _ := range items {
+		item, header, err := getItem(pageNum, offset, s, key)
+		if err != nil {
+			return nil, err
+		}
+
+		items[i] = item
+		if err != nil {
+			return nil, err
+		}
+		pageNum = uint32(header.NextItemPageNum)
+		offset = header.NextItemOffset
+	}
+
+	return items, nil
+}
+
+func getItem(page uint32, offset uint16, s *Stream, key uint32) ([]byte, StoreItem, error) {
+	curOffset := offset
+	curPageNum := page
 
 	curPage, err := s.pager.Page(curPageNum)
 	if err != nil {
-		return nil, err
+		return nil, StoreItem{}, err
 	}
 
 	header := Deserialise((*curPage)[curOffset : curOffset+14])
 
-	if header.Key != key {
-		return nil, fmt.Errorf("incorrect key found in header")
-	}
-	if header.Length != indexItem.Length {
-		return nil, fmt.Errorf("length mismatch")
-	}
-
 	curOffset += 14
 
-	buffer := make([]byte, indexItem.Length)
+	buffer := make([]byte, header.Length)
 	curNode := NewNode(curPage)
 
 	totalNumBytesRead := uint32(0)
 
-	for totalNumBytesRead < indexItem.Length {
-		numBytesRead, _ := curNode.Read(curOffset, indexItem.Length-totalNumBytesRead, buffer[totalNumBytesRead:])
+	for totalNumBytesRead < header.Length {
+		numBytesRead, _ := curNode.Read(curOffset, header.Length-totalNumBytesRead, buffer[totalNumBytesRead:])
 		totalNumBytesRead += numBytesRead
 
-		if totalNumBytesRead < indexItem.Length {
+		if totalNumBytesRead < header.Length {
 			nextPageNum := curNode.Next()
 			nextPage, _ := s.pager.Page(nextPageNum)
 			curNode = NewNode(nextPage)
 			curOffset = HeaderSize
 		}
 	}
-	return buffer, nil
+	return buffer, header, nil
 }
 
 func (s *Stream) makeNewTailNode(curPageNum uint32, curNode *Node) (uint32, *Node, error) {
