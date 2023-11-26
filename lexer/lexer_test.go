@@ -8,7 +8,7 @@ import (
 
 func TestNextToken(t *testing.T) {
 	input := `get;
-	add "[1, 'a', 'b']"`
+	add '[1, "a", "b"]'`
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -17,7 +17,7 @@ func TestNextToken(t *testing.T) {
 		{token.SELECT, "get"},
 		{token.SEMICOLON, ";"},
 		{token.INSERT, "add"},
-		{token.STRING, "[1, 'a', 'b']"},
+		{token.STRING, `[1, "a", "b"]`},
 	}
 
 	l := New(input)
