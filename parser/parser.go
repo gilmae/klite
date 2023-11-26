@@ -96,7 +96,27 @@ func (p *Parser) parseStringLiteral() ast.Expression {
 func (p *Parser) parseSelectStatement() *ast.SelectStatement {
 	stmt := &ast.SelectStatement{Token: p.curToken}
 
-	for p.peekTokenIs(token.SEMICOLON) {
+	if !p.peekTokenIs(token.INT) {
+		return stmt
+	}
+
+	p.nextToken()
+	literal := p.parseExpression(LOWEST)
+	if !p.peekTokenIs(token.AFTER) {
+		stmt.Key = literal
+
+	} else {
+		stmt.Num = literal
+		p.nextToken()
+		if !p.peekTokenIs(token.INT) {
+			return nil
+		} else {
+			stmt.Key = p.parseExpression(LOWEST)
+		}
+	}
+	p.nextToken()
+
+	for !p.peekTokenIs(token.SEMICOLON) && !p.peekTokenIs(token.EOF) {
 		p.nextToken()
 	}
 
@@ -106,11 +126,19 @@ func (p *Parser) parseSelectStatement() *ast.SelectStatement {
 func (p *Parser) parseInsertStatement() *ast.InsertStatement {
 	stmt := &ast.InsertStatement{Token: p.curToken}
 
-	if !p.expectPeek(token.LPAREN) {
-		return nil
+	if !p.peekTokenIs(token.STRING) {
+		return stmt
 	}
 
-	stmt.Arguments = p.parseExpressionList(token.RPAREN)
+	p.nextToken()
+	literal := p.parseExpression(LOWEST)
+	stmt.Argument = literal
+
+	p.nextToken()
+
+	for !p.peekTokenIs(token.SEMICOLON) && !p.peekTokenIs(token.EOF) {
+		p.nextToken()
+	}
 
 	return stmt
 }

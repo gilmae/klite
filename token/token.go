@@ -22,11 +22,14 @@ const (
 	STRING = "STRING"
 
 	NIL = "NIL"
+
+	AFTER = "AFTER"
 )
 
 var keywords = map[string]TokenType{
-	"insert": INSERT,
-	"select": SELECT,
+	"add":   INSERT,
+	"get":   SELECT,
+	"after": AFTER,
 }
 
 // LookupIdent checks if an identifier is a keyword or a user identifier

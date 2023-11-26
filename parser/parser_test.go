@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gilmae/sqlike/ast"
-	"github.com/gilmae/sqlike/lexer"
+	"github.com/gilmae/klite/ast"
+	"github.com/gilmae/klite/lexer"
 )
 
 func TestSelectStatement(t *testing.T) {
 	input := `
-	select
+	get 1
 	`
 
 	l := lexer.New(input)
@@ -25,20 +25,26 @@ func TestSelectStatement(t *testing.T) {
 
 	}
 
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.SelectStatement)
-		if !ok {
-			t.Errorf("stmt not *ast.SelectStatement. got %T", stmt)
-		}
-
-		if returnStmt.TokenLiteral() != "select" {
-			t.Errorf("returnStmt.TokenLiteral() not 'select', got %q", returnStmt.TokenLiteral())
-		}
+	stmt := program.Statements[0]
+	returnStmt, ok := stmt.(*ast.SelectStatement)
+	if !ok {
+		t.Errorf("stmt not *ast.SelectStatement. got %T", stmt)
 	}
+
+	if returnStmt.TokenLiteral() != "get" {
+		t.Errorf("returnStmt.TokenLiteral() not 'get', got %q", returnStmt.TokenLiteral())
+	}
+
+	if stmt.(*ast.SelectStatement).Key == nil {
+		t.Errorf("nil key found, expected %s", "1")
+	} else if stmt.(*ast.SelectStatement).Key.String() != "1" {
+		t.Errorf("stmt.Key is incorrect, expected %s, got %s", "1", stmt.(*ast.SelectStatement).Key.String())
+	}
+
 }
 
 func TestInsertStatement(t *testing.T) {
-	input := "insert (1, 'a');"
+	input := "add \"abc\";"
 
 	l := lexer.New(input)
 	p := New(l)
@@ -53,14 +59,7 @@ func TestInsertStatement(t *testing.T) {
 		t.Errorf(" program.Statements[0] not *ast.InsertStatement. got %T", stmt)
 	}
 
-	if len(stmt.Arguments) != 2 {
-		t.Fatalf("stmt.Arguments is wrong, expected %d, got %d",
-			2,
-			len(stmt.Arguments))
-	}
-
-	testLiteralExpression(t, stmt.Arguments[0], 1)
-	testLiteralExpression(t, stmt.Arguments[1], "a")
+	testLiteralExpression(t, stmt.Argument, "abc")
 }
 
 // func TestInsertStatement(t *testing.T) {

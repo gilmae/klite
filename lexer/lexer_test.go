@@ -7,23 +7,17 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `select;
-	insert (1, 'a', 'b')`
+	input := `get;
+	add "[1, 'a', 'b']"`
 
 	tests := []struct {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.SELECT, "select"},
+		{token.SELECT, "get"},
 		{token.SEMICOLON, ";"},
-		{token.INSERT, "insert"},
-		{token.LPAREN, "("},
-		{token.INT, "1"},
-		{token.COMMA, ","},
-		{token.STRING, "a"},
-		{token.COMMA, ","},
-		{token.STRING, "b"},
-		{token.RPAREN, ")"},
+		{token.INSERT, "add"},
+		{token.STRING, "[1, 'a', 'b']"},
 	}
 
 	l := New(input)

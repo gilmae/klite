@@ -2,7 +2,6 @@ package ast
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/gilmae/klite/token"
 )
@@ -42,7 +41,10 @@ func (p *Program) TokenLiteral() string {
 }
 
 type SelectStatement struct {
-	Token token.Token
+	Token  token.Token
+	Key    Expression
+	Num    Expression
+	Stream Expression
 }
 
 func (ss *SelectStatement) statementNode()       {}
@@ -50,12 +52,21 @@ func (ss *SelectStatement) TokenLiteral() string { return ss.Token.Literal }
 func (ss *SelectStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString(ss.TokenLiteral() + " ")
+	if ss.Num != nil {
+		out.WriteString(ss.Num.String() + " after")
+	}
+
+	out.WriteString(ss.Key.String())
+
+	if ss.Stream != nil {
+		out.WriteString(" from " + ss.Stream.String())
+	}
 	return out.String()
 }
 
 type InsertStatement struct {
-	Token     token.Token
-	Arguments []Expression
+	Token    token.Token
+	Argument Expression
 }
 
 func (is *InsertStatement) statementNode()       {}
@@ -63,13 +74,8 @@ func (is *InsertStatement) TokenLiteral() string { return is.Token.Literal }
 func (is *InsertStatement) String() string {
 	var out bytes.Buffer
 
-	args := []string{}
-	for _, s := range is.Arguments {
-		args = append(args, s.String())
-	}
-
 	out.WriteString("insert ")
-	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(is.Argument.String())
 	return out.String()
 }
 

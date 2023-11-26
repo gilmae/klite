@@ -9,7 +9,7 @@ It's kind of a dumb idea, yeah, but it's an idea I want to play with because why
 ## The Plan
 Intention is to be a (mostly) append-only stream of data, that can later be retrieved by key and in chunks. The query language might look something like:
 
-`ADD $data TO $stream`
+`ADD "$data" TO $stream`
 
 `GET $key FROM $stream`
 
