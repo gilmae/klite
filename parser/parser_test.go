@@ -44,7 +44,7 @@ func TestSelectStatement(t *testing.T) {
 }
 
 func TestInsertStatement(t *testing.T) {
-	input := "add \"abc\";"
+	input := "add '\"abc\"';"
 
 	l := lexer.New(input)
 	p := New(l)
@@ -59,7 +59,7 @@ func TestInsertStatement(t *testing.T) {
 		t.Errorf(" program.Statements[0] not *ast.InsertStatement. got %T", stmt)
 	}
 
-	testLiteralExpression(t, stmt.Argument, "abc")
+	testLiteralExpression(t, stmt.Argument, "\"abc\"")
 }
 
 // func TestInsertStatement(t *testing.T) {
