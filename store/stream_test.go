@@ -33,15 +33,16 @@ func TestWriteToStream(t *testing.T) {
 		t.Errorf("space remaining is incorrect ,expected %+v, got %+v", 4, head.SpaceRemaining())
 	}
 
-	if indexRootNode.GetMaxKey() != 0 {
-		t.Errorf("incorrect max key in index, expected %d, got %d", 0, indexRootNode.GetMaxKey())
+	maxKey, _ := indexRootNode.GetMaxKey()
+	if maxKey != 0 {
+		t.Errorf("incorrect max key in index, expected %d, got %d", 0, maxKey)
 	}
 
 	if key != 0 {
 		t.Errorf("incorrect key returned, expected %d, got %d", 0, key)
 	}
 
-	expectedHeaderBytes := []byte{0x0, 0, 0, 0, 0xE6, 0xF, 0, 0, 0, 0, 0, 0, 0, 0}
+	expectedHeaderBytes := []byte{0x0, 0, 0, 0, 0xE6, 0xF, 0, 0, 0x2, 0, 0, 0, 0xC, 0}
 	actualHeaderBytes := (*headPage)[12:26]
 
 	if !bytes.Equal(expectedHeaderBytes, actualHeaderBytes) {
@@ -132,9 +133,9 @@ func TestWriteToStreamWithInsufficientSpace(t *testing.T) {
 	if (*tail).Previous() != stream.StoreHeadPage() {
 		t.Errorf("incorrect value for previous page before tailPage, expected %d, got %d", stream.StoreHeadPage(), (*tail).Previous())
 	}
-
-	if indexRootNode.GetMaxKey() != 1 {
-		t.Errorf("incorrect max key in index, expected %d, got %d", 1, indexRootNode.GetMaxKey())
+	maxKey, _ := indexRootNode.GetMaxKey()
+	if maxKey != 1 {
+		t.Errorf("incorrect max key in index, expected %d, got %d", 1, maxKey)
 	}
 
 }
