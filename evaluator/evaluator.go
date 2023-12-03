@@ -27,7 +27,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 				return &object.Error{Message: fmt.Sprintf("%s", err)}
 			}
 
-			return &object.String{Value: string(value)}
+			return &object.String{Value: fmt.Sprintf("%d:\t%s", value.Key, string(value.Data))}
 		} else {
 			num, err := strconv.Atoi(node.Num.String())
 			if err != nil {
@@ -39,7 +39,7 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			}
 			lines := make([]string, len(values))
 			for idx, v := range values {
-				lines[idx] = string(v)
+				lines[idx] = fmt.Sprintf("%d:\t%s", v.Key, string(v.Data))
 			}
 			return &object.String{Value: strings.Join(lines, "\n")}
 		}

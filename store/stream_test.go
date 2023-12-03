@@ -168,8 +168,8 @@ func TestReadFromStream(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error, got %+v", err)
 	}
-	if !bytes.Equal(actualBuffer, expectedBuffer) {
-		t.Errorf("incorrect buffer returned, expected %+v, got %+v", expectedBuffer, actualBuffer)
+	if !bytes.Equal(actualBuffer.Data, expectedBuffer) {
+		t.Errorf("incorrect buffer returned, expected %+v, got %+v", expectedBuffer, actualBuffer.Data)
 	}
 }
 
@@ -194,7 +194,7 @@ func TestReadFromStreamUsingInvalidKey(t *testing.T) {
 		t.Errorf("expected an error for invalid key")
 	}
 
-	if actualBuffer != nil {
+	if actualBuffer.Data != nil {
 		t.Errorf("incorrect buffer returned, got %+v", actualBuffer)
 	}
 }
@@ -218,11 +218,11 @@ func TestReadMultiple(t *testing.T) {
 		t.Errorf("incorrect number of items recived, expected %d, got %d", 2, len(items))
 	}
 
-	if !bytes.Equal(expectedItem1, items[0]) {
-		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem1, items[0])
+	if !bytes.Equal(expectedItem1, items[0].Data) {
+		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem1, items[0].Data)
 	}
 
-	if !bytes.Equal(expectedItem2, items[1]) {
-		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem2, items[1])
+	if !bytes.Equal(expectedItem2, items[1].Data) {
+		t.Errorf("incorrect value received, expected %+v, got %+v", expectedItem2, items[1].Data)
 	}
 }

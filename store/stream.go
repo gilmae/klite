@@ -194,18 +194,18 @@ func (s *Stream) Add(payload []byte) (uint32, error) {
 	return key, nil
 }
 
-func (s *Stream) Get(key uint32) ([]byte, error) {
+func (s *Stream) Get(key uint32) (Record, error) {
 	items, err := s.GetFrom(key, 1)
 	if err != nil {
-		return nil, err
+		return Record{}, err
 	}
 
 	return items[0], nil
 
 }
 
-func (s *Stream) GetFrom(key uint32, num uint16) ([][]byte, error) {
-	items := make([][]byte, num)
+func (s *Stream) GetFrom(key uint32, num uint16) ([]Record, error) {
+	items := make([]Record, num)
 	indexItem := s.index.Get(key)
 
 	if cmp.Equal(indexItem, data.IndexItem{}) {
@@ -221,7 +221,7 @@ func (s *Stream) GetFrom(key uint32, num uint16) ([][]byte, error) {
 			return nil, err
 		}
 
-		items[i] = item
+		items[i] = Record{Data: item, Key: header.Key}
 		if err != nil {
 			return nil, err
 		}
