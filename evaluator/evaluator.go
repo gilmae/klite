@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gilmae/klite/ast"
 	"github.com/gilmae/klite/environment"
@@ -27,6 +28,20 @@ func Eval(node ast.Node, env *environment.Environment) object.Object {
 			}
 
 			return &object.String{Value: string(value)}
+		} else {
+			num, err := strconv.Atoi(node.Num.String())
+			if err != nil {
+				return &object.Error{Message: fmt.Sprintf("%s", err)}
+			}
+			values, err := stream.GetFrom(uint32(key), uint16(num))
+			if err != nil {
+				return &object.Error{Message: fmt.Sprintf("%s", err)}
+			}
+			lines := make([]string, len(values))
+			for idx, v := range values {
+				lines[idx] = string(v)
+			}
+			return &object.String{Value: strings.Join(lines, "\n")}
 		}
 
 		return nil

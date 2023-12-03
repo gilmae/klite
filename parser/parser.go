@@ -108,9 +108,11 @@ func (p *Parser) parseSelectStatement() *ast.SelectStatement {
 	} else {
 		stmt.Num = literal
 		p.nextToken()
+
 		if !p.peekTokenIs(token.INT) {
 			return nil
 		} else {
+			p.nextToken()
 			stmt.Key = p.parseExpression(LOWEST)
 		}
 	}
