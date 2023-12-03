@@ -53,9 +53,12 @@ func InitialiseStream(p data.Pager) (*Stream, uint32) {
 
 	storeHeadPageNum := stream.pager.GetNextUnusedPageNum()
 	storeHeadPage, _ := stream.pager.Page(storeHeadPageNum)
+
 	InititaliseNode(storeHeadPage)
 	stream.SetStoreHeadPage(storeHeadPageNum)
 	stream.SetStoreTailPage(storeHeadPageNum)
+	stream.setLastValueWrittenPage(storeHeadPageNum)
+	stream.setLastValueWrittenPos(HeaderSize)
 
 	stream.setNextKey(0)
 

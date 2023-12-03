@@ -291,8 +291,9 @@ func TestLeafSplit(t *testing.T) {
 		t.Errorf("unexpected number of cells in left child, expected %d, got %d", LeafNodeLeftSplitCount, leftNode.NumCells())
 	}
 
-	if leftNode.GetMaxKey() != uint32(LeafNodeLeftSplitCount)-1 {
-		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, leftNode.GetMaxKey())
+	leftNodeMaxKey, _ := leftNode.GetMaxKey()
+	if leftNodeMaxKey != uint32(LeafNodeLeftSplitCount)-1 {
+		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, leftNodeMaxKey)
 	}
 	if leftNode.GetNodeKey(LeafNodeLeftSplitCount-1) != uint32(LeafNodeLeftSplitCount)-1 {
 		t.Errorf("unexpected value for leftNode.cell[170], expected %d, got %d", uint32(LeafNodeLeftSplitCount)-1, leftNode.GetNodeKey(LeafNodeLeftSplitCount))
@@ -312,8 +313,10 @@ func TestLeafSplit(t *testing.T) {
 	if rightNode.NumCells() != LeafNodeRightSplitCount {
 		t.Errorf("unexpected number of cells in right child, expected %d, got %d", LeafNodeRightSplitCount, rightNode.NumCells())
 	}
-	if rightNode.GetMaxKey() != uint32(LeafNodeMaxCells) {
-		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeMaxCells), rightNode.GetMaxKey())
+
+	rightNodeMaxKey, _ := rightNode.GetMaxKey()
+	if rightNodeMaxKey != uint32(LeafNodeMaxCells) {
+		t.Errorf("unexpected value for leftNode.GetMaxKey, expected %d, got %d", uint32(LeafNodeMaxCells), rightNodeMaxKey)
 	}
 	if rightNode.GetNodeKey(LeafNodeRightSplitCount-1) != uint32(LeafNodeMaxCells) {
 		t.Errorf("unexpected value for last rightNode.cell key, expected %d, got %d", LeafNodeMaxCells, rightNode.GetNodeKey(LeafNodeRightSplitCount-1))

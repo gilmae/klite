@@ -83,6 +83,7 @@ func NewFilePager(filename string) (*FilePager, error) {
 }
 
 func (p *FilePager) Close() {
+	p.Flush()
 	p.fileDescriptor.Close()
 }
 

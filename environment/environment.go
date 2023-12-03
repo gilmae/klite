@@ -11,16 +11,16 @@ import (
 var VERSION = []uint8{0, 9, 1}
 
 const (
-	RootPage              = 0
-	IdentifierOffset      = 0
-	IdentifierSize        = uint16(unsafe.Sizeof([]byte("klite")))
+	RootPage              = uint32(0)
+	IdentifierOffset      = uint16(0)
+	IdentifierSize        = uint16(5)
 	VersionMajorOffset    = IdentifierSize
 	VersionMajorSize      = uint16(unsafe.Sizeof(uint8(0)))
 	VersionMinorOffset    = VersionMajorSize + VersionMajorOffset
 	VersionMinorSize      = uint16(unsafe.Sizeof(uint8(0)))
 	VersionRevisionOffset = VersionMinorOffset + VersionMinorSize
 	VersionRevisionSize   = uint16(unsafe.Sizeof(uint8(0)))
-	StreamPageOffset      = VersionRevisionOffset + VersionRevisionSize + 1
+	StreamPageOffset      = VersionRevisionOffset + VersionRevisionSize
 	StreamPageSize        = uint16(unsafe.Sizeof(uint32(0)))
 
 	StoreHeaderSize = StreamPageOffset + StreamPageSize
@@ -85,4 +85,8 @@ func (e *Environment) SetStreamPage(streamPage uint32) {
 
 func (e *Environment) GetStream() *store.Stream {
 	return store.NewStream(e.pager, e.StreamPage())
+}
+
+func (e *Environment) Pager() data.Pager {
+	return e.pager
 }

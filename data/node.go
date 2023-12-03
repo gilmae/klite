@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/binary"
+	"fmt"
 	"unsafe"
 )
 
@@ -72,12 +73,20 @@ func (n *Node) SetParentPointer(parent uint32) {
 	binary.LittleEndian.PutUint32((*n.page)[ParentPointerOffset:ParentPointerOffset+ParentPointerSize], parent)
 }
 
-func (n *Node) GetMaxKey() uint32 {
+func (n *Node) GetMaxKey() (uint32, error) {
 	switch n.Type() {
 	case InternalNode:
-		return n.InternalKey(n.NumKeys() - 1)
+		numKeys := n.NumKeys()
+		if numKeys == 0 {
+			return 0, fmt.Errorf("empty")
+		}
+		return n.InternalKey(numKeys - 1), nil
 	case LeafNode:
-		return n.GetNodeKey(n.NumCells() - 1)
+		numCells := n.NumCells()
+		if numCells == 0 {
+			return 0, fmt.Errorf("empty")
+		}
+		return n.GetNodeKey(numCells - 1), nil
 	}
-	return 0
+	return 0, fmt.Errorf("unknown node type")
 }
