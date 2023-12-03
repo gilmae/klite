@@ -29,11 +29,13 @@ Intention is to be a (mostly) append-only stream of data, that can later be retr
 3. Functions to add new sets of data to the stream
 4. Functions to retrieve data from the stream by key
 5. Functions to retrieve n items from the stream starting with key x
+6. A cli that offers a REPL 
+
 
 ### What we think we need
-* To help support the BEFORE and AFTER commands, Next and Previous links in the value headers
-* A repl (plus command parser)
+* To help support a BEFORE commands, Previous links in the value headers
 * Support for multiple streams. Not sure how to store a hash of string to stream root page in the file. Another B Tree?
+* I think I will need to break the cli out into a seperate library, so I have a libKLite and and klite the cli tool
 
 More long range things:
 
